@@ -1,71 +1,69 @@
-import { Smartphone, Monitor, ArrowLeft } from 'lucide-react';
+import { Smartphone, Monitor, Apple } from 'lucide-react';
 import type { ARCapabilities } from '@/services/ar';
 
 export interface ARUnsupportedProps {
   capabilities: ARCapabilities;
-  productName: string;
-  onBack?: () => void;
+  productName?: string;
 }
 
-export function ARUnsupported({ capabilities, productName: _productName, onBack }: ARUnsupportedProps) {
+/**
+ * Polished explanation panel shown when the device cannot hand off to a
+ * native AR session. Rendered inside the AR page's bottom sheet — the 3D
+ * preview above it keeps working, so the experience never dead-ends.
+ */
+export function ARUnsupported({ capabilities, productName }: ARUnsupportedProps) {
+  const rows = [
+    {
+      icon: Smartphone,
+      title: 'Android',
+      detail: 'Chrome 79+ with ARCore. Opens Google Scene Viewer automatically at true scale.',
+      tone: 'bg-green-500/10 text-green-400',
+    },
+    {
+      icon: Apple,
+      title: 'iPhone & iPad',
+      detail: 'Safari with ARKit. Uses Apple Quick Look to place the product in your room.',
+      tone: 'bg-blue-500/10 text-blue-400',
+    },
+    {
+      icon: Monitor,
+      title: 'Desktop',
+      detail: 'No camera-based AR — you get the full real-time 3D viewer instead.',
+      tone: 'bg-white/5 text-white/40',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-brand-950 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        {/* Icon */}
-        <div className="w-20 h-20 rounded-2xl bg-brand-900 border border-white/10 flex items-center justify-center mx-auto mb-6">
-          <Smartphone className="w-9 h-9 text-white/40" />
+    <div>
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-accent-500/15 border border-accent-500/20 flex items-center justify-center shrink-0">
+          <Smartphone className="w-5 h-5 text-accent-400" />
         </div>
-
-        {/* Message */}
-        <h1 className="text-2xl font-bold text-white text-center mb-2">AR is not available</h1>
-        <p className="text-white/50 text-sm text-center leading-relaxed mb-6">
-          {capabilities.reason}
-        </p>
-
-        {/* Supported devices info */}
-        <div className="bg-brand-900/50 rounded-2xl border border-white/10 p-5 mb-6">
-          <h2 className="text-white font-semibold text-sm mb-3">Supported devices</h2>
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
-                <Smartphone className="w-4 h-4 text-green-400" />
-              </div>
-              <div>
-                <p className="text-white text-xs font-medium">Android</p>
-                <p className="text-white/40 text-2xs leading-relaxed">Chrome 79+ with ARCore support. Google Scene Viewer opens automatically.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-                <Smartphone className="w-4 h-4 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-white text-xs font-medium">iOS (iPhone/iPad)</p>
-                <p className="text-white/40 text-2xs leading-relaxed">Safari on iOS 12+ with ARKit. Uses Apple Quick Look for AR placement.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                <Monitor className="w-4 h-4 text-white/40" />
-              </div>
-              <div>
-                <p className="text-white text-xs font-medium">Desktop</p>
-                <p className="text-white/40 text-2xs leading-relaxed">AR is not supported on desktop browsers. Use the 3D viewer below to inspect the product.</p>
-              </div>
-            </div>
-          </div>
+        <div>
+          <h2 className="text-white font-semibold text-sm">
+            {productName ? `${productName} — ` : ''}3D preview
+          </h2>
+          <p className="text-white/50 text-xs leading-relaxed mt-0.5">
+            {capabilities.reason ||
+              'Camera-based AR is not available on this device, so the live 3D model is shown instead.'}
+          </p>
         </div>
+      </div>
 
-        {/* Actions */}
-        <div className="flex gap-3">
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="flex-1 h-11 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/15 transition-colors flex items-center justify-center gap-1.5"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back to product
-            </button>
-          )}
+      <div className="bg-brand-900/60 rounded-2xl border border-white/10 p-4">
+        <h3 className="text-white font-semibold text-xs mb-3">Where AR works</h3>
+        <div className="space-y-3">
+          {rows.map((row) => (
+            <div key={row.title} className="flex items-start gap-3">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${row.tone}`}>
+                <row.icon className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-white text-xs font-medium">{row.title}</p>
+                <p className="text-white/45 text-2xs leading-relaxed mt-0.5">{row.detail}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

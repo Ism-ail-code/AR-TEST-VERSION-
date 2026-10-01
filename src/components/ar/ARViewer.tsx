@@ -1,135 +1,206 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import '@google/model-viewer';
 import type { ModelViewerElement } from '@google/model-viewer';
 import type { ARMode } from '@/services/ar';
 import type { ARConfiguration } from '@/types';
+import { Box, RotateCcw } from 'lucide-react';
+
+export type ViewerStatus = 'loading' | 'ready' | 'ar-started' | 'ar-ended' | 'error';
 
 export interface ARViewerProps {
   modelUrl: string;
   productName: string;
+  /** Used by the error state to link back to the storefront. */
+  productSlug?: string;
   arMode: ARMode;
-  arConfiguration?: ARConfiguration | null;
+  configuration?: ARConfiguration | null;
   className?: string;
-  onARStatusChange?: (status: 'idle' | 'loading' | 'ar-started' | 'ar-ended' | 'error') => void;
+  /** Allows the page to call `activateAR()` / reset the camera imperatively. */
+  viewerRef?: React.MutableRefObject<ModelViewerElement | null>;
+  onStatusChange?: (status: ViewerStatus) => void;
 }
 
-function getEnvironmentImage(config?: ARConfiguration | null): string {
+function environmentImage(config?: ARConfiguration | null): string {
   if (!config) return 'neutral';
   switch (config.lightingPreset) {
-    case 'studio': return 'studio';
-    case 'dramatic': return 'dawn';
-    case 'natural':
-    default: return config.environmentPreset || 'neutral';
+    case 'studio':
+      return 'studio';
+    case 'dramatic':
+      return 'dawn';
+    default:
+      return config.environmentPreset || 'neutral';
   }
 }
 
-export function ARViewer({ modelUrl, productName, arMode, arConfiguration, className = '', onARStatusChange }: ARViewerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<ModelViewerElement | null>(null);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'ar-started' | 'ar-ended' | 'error'>('idle');
-  const [modelLoaded, setModelLoaded] = useState(false);
-  const [loadProgress, setLoadProgress] = useState(0);
+function orbitFor(config?: ARConfiguration | null): string {
+  const yaw = 45 + (config?.rotation?.y ?? 0);
+  return `${yaw}deg 55deg 105%`;
+}
 
-  const updateStatus = useCallback(
-    (newStatus: typeof status) => {
-      setStatus(newStatus);
-      onARStatusChange?.(newStatus);
+function arModesAttr(mode: ARMode): string {
+  switch (mode) {
+    case 'webxr':
+      return 'webxr';
+    case 'scene-viewer':
+      return 'scene-viewer';
+    case 'quick-look':
+      return 'quick-look';
+    default:
+      return 'webxr scene-viewer quick-look';
+  }
+}
+
+/**
+ * Full-screen 3D / AR viewer.
+ *
+ * Uses `<model-viewer>`'s built-in AR hand-off (WebXR on desktop/Android
+ * Chrome, Google Scene Viewer on Android, Apple Quick Look on iOS) while the
+ * surrounding page provides the product-specific controls.
+ */
+export function ARViewer({
+  modelUrl,
+  productName,
+  productSlug,
+  arMode,
+  configuration,
+  className = '',
+  viewerRef,
+  onStatusChange,
+}: ARViewerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState<ViewerStatus>('loading');
+  const [progress, setProgress] = useState(0);
+
+  const update = useCallback(
+    (next: ViewerStatus) => {
+      setStatus(next);
+      onStatusChange?.(next);
     },
-    [onARStatusChange]
+    [onStatusChange],
   );
+
+  const handleRetry = useCallback(() => {
+    const el = viewerRef?.current;
+    if (!el) return;
+    update('loading');
+    setProgress(0);
+    el.src = '';
+    requestAnimationFrame(() => {
+      el.src = modelUrl;
+    });
+  }, [modelUrl, update, viewerRef]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
     const viewer = container.querySelector('model-viewer') as ModelViewerElement | null;
+    if (viewerRef) viewerRef.current = viewer;
     if (!viewer) return;
-    viewerRef.current = viewer;
 
-    const onProgress = (e: any) => {
-      setLoadProgress(Math.round((e.detail?.totalProgress ?? 0) * 100));
-      if (status !== 'loading') updateStatus('loading');
+    const onProgress = (e: Event) => {
+      const detail = (e as CustomEvent<{ totalProgress?: number }>).detail;
+      setProgress(Math.round((detail?.totalProgress ?? 0) * 100));
+      update('loading');
     };
-
-    const onLoad = () => {
-      setModelLoaded(true);
-      updateStatus('idle');
-    };
-
-    const onError = () => {
-      updateStatus('error');
-    };
-
-    const onARStatus = (e: any) => {
-      const arStatus = e.detail?.status;
-      if (arStatus === 'session-started') updateStatus('ar-started');
-      else if (arStatus === 'object-unplaced') updateStatus('ar-started');
-      else if (arStatus === 'object-placed') updateStatus('ar-started');
-      else if (arStatus === 'failed' || arStatus === 'not-supporting-browser') updateStatus('error');
+    const onLoad = () => update('ready');
+    const onError = () => update('error');
+    const onARStatus = (e: Event) => {
+      const detail = (e as CustomEvent<{ status?: string }>).detail;
+      switch (detail?.status) {
+        case 'session-started':
+        case 'object-unplaced':
+        case 'object-placed':
+          update('ar-started');
+          break;
+        case 'session-ended':
+          update('ready');
+          break;
+        case 'failed':
+        case 'not-supporting-browser':
+          update('error');
+          break;
+      }
     };
 
     viewer.addEventListener('progress', onProgress);
     viewer.addEventListener('load', onLoad);
     viewer.addEventListener('error', onError);
     viewer.addEventListener('ar-status', onARStatus);
-
     return () => {
       viewer.removeEventListener('progress', onProgress);
       viewer.removeEventListener('load', onLoad);
       viewer.removeEventListener('error', onError);
       viewer.removeEventListener('ar-status', onARStatus);
     };
-  }, [status, updateStatus]);
-
-  const arModesAttr = arMode === 'none' ? undefined : getModelViewerARAttr(arMode);
-  const envImage = getEnvironmentImage(arConfiguration);
-  const cameraOrbit = arConfiguration
-    ? `${45 + (arConfiguration.rotation?.y ?? 0)}deg 55deg 105%`
-    : '45deg 55deg 105%';
+  }, [viewerRef, update]);
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <model-viewer
         src={modelUrl}
-        alt={productName}
+        alt={`Place the ${productName} in your room`}
         camera-controls
         auto-rotate
-        auto-rotate-delay="1000"
-        rotation-per-second="25deg"
-        shadow-intensity={arConfiguration?.backgroundBlur ? '0' : '1'}
-        shadow-softness={arConfiguration?.backgroundBlur ? '0' : '0.5'}
+        auto-rotate-delay="1500"
+        rotation-per-second="22deg"
+        shadow-intensity={configuration?.backgroundBlur ? '0' : '1'}
+        shadow-softness="0.8"
         exposure="1"
-        environment-image={envImage}
-        camera-orbit={cameraOrbit}
-        min-camera-orbit="auto auto 50%"
-        max-camera-orbit="Infinity 160deg 200%"
+        environment-image={environmentImage(configuration)}
+        camera-orbit={orbitFor(configuration)}
+        min-camera-orbit="auto auto 55%"
+        max-camera-orbit="auto 160deg 200%"
         field-of-view="30deg"
         interpolation-decay="100"
         ar
-        ar-modes={arModesAttr}
-        ar-scale={arConfiguration ? String(arConfiguration.scale) : 'auto'}
+        ar-modes={arModesAttr(arMode)}
+        /* 'auto' keeps the model at its real-world size; 'fixed' would let the
+           user rescale it, which breaks the "does it actually fit?" promise. */
+        ar-scale="auto"
+        ar-hint="false"
+        ar-poster=""
+        interaction-prompt="none"
+        reveal="auto"
         touch-action="pan-y"
         style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
       />
 
       {/* Loading overlay */}
-      {(!modelLoaded && status !== 'error') && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-50/80 backdrop-blur-sm pointer-events-none">
-          <div className="w-12 h-12 rounded-full border-2 border-brand-200 border-t-accent-500 animate-spin" />
-          <p className="text-xs text-brand-500 mt-3 font-medium">
-            {status === 'loading' ? `Loading model... ${loadProgress}%` : 'Preparing 3D model...'}
+      {status === 'loading' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-brand-950/90 backdrop-blur-sm z-10 pointer-events-none">
+          <div className="w-12 h-12 rounded-full border-2 border-white/15 border-t-accent-500 animate-spin" />
+          <p className="text-xs text-white/50 mt-3 font-medium">Loading model… {progress}%</p>
+        </div>
+      )}
+
+      {/* Error overlay — never a dead end */}
+      {status === 'error' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-brand-950/95 backdrop-blur-sm z-10 text-center px-6">
+          <div className="w-14 h-14 rounded-2xl bg-brand-900 border border-white/10 flex items-center justify-center mb-4">
+            <Box className="w-7 h-7 text-white/40" />
+          </div>
+          <p className="text-white text-sm font-semibold mb-1.5">Could not load the 3D model</p>
+          <p className="text-white/45 text-xs max-w-xs leading-relaxed mb-5">
+            The model file did not load — product photos are still available on the product
+            page.
           </p>
+          <div className="flex items-center gap-2.5">
+            <Link
+              to={productSlug ? `/product/${productSlug}` : '/products'}
+              className="h-10 px-5 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/15 transition-colors inline-flex items-center"
+            >
+              Product page
+            </Link>
+            <button
+              onClick={handleRetry}
+              className="h-10 px-5 bg-accent-500 text-white rounded-xl text-sm font-semibold hover:bg-accent-600 transition-colors inline-flex items-center gap-2"
+            >
+              <RotateCcw className="w-4 h-4" /> Try again
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
-}
-
-function getModelViewerARAttr(mode: ARMode): string {
-  switch (mode) {
-    case 'webxr': return 'webxr';
-    case 'scene-viewer': return 'scene-viewer';
-    case 'quick-look': return 'quick-look';
-    default: return 'webxr scene-viewer quick-look';
-  }
 }
