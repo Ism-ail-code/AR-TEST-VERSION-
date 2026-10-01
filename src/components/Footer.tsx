@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Mail, Phone, ArrowUpRight } from 'lucide-react';
-import { demoStore } from '@/data/demo';
+import { demoStore } from '@/data/products';
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -18,7 +18,7 @@ export function Footer() {
               <span className="text-base font-bold text-white tracking-tight">{demoStore.name}</span>
             </div>
             <p className="text-sm leading-relaxed text-brand-400">
-              {demoStore.shortDescription}
+              {demoStore.tagline}
             </p>
           </div>
 

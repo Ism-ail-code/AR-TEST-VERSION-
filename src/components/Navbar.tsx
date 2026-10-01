@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, Menu, X, Search, User } from 'lucide-react';
-import { demoStore, demoProducts } from '@/data/demo';
+import { demoStore, demoProducts } from '@/data/products';
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);

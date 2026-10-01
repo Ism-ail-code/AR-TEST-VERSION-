@@ -13,7 +13,7 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import { demoStore } from '@/data/demo';
+import { demoStore } from '@/data/products';
 
 const sidebarNav = [
   { to: '/merchant', label: 'Overview', icon: LayoutDashboard, end: true },

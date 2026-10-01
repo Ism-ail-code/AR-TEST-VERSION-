@@ -1,5 +1,5 @@
-import { demoStore } from '@/data/demo';
-import { Store, MapPin, Mail, Globe } from 'lucide-react';
+import { demoStore } from '@/data/products';
+import { MapPin, Mail, Globe } from 'lucide-react';
 
 export function MerchantStore() {
   return (

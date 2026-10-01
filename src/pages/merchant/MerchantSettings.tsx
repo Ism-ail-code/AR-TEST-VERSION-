@@ -1,4 +1,4 @@
-import { Settings, Bell, Shield, Palette } from 'lucide-react';
+import { Bell, Shield, Palette } from 'lucide-react';
 
 export function MerchantSettings() {
   return (
