@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Store, ShoppingBag, ArrowRight, X, Sparkles } from 'lucide-react';
 
 type Mode = 'customer' | 'merchant';
@@ -26,7 +26,15 @@ const merchantLinks = [
 export function ExperienceSwitcher() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const currentMode = detectMode(location.pathname);
+
+  /** Card is clickable, but any real link inside it keeps priority. */
+  const cardNavigate = (href: string) => (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('a')) return;
+    setOpen(false);
+    navigate(href);
+  };
 
   // Hide on AR pages (full-screen experience)
   if (location.pathname.startsWith('/ar/')) return null;
@@ -69,10 +77,9 @@ export function ExperienceSwitcher() {
             {/* Mode cards */}
             <div className="p-3 space-y-2">
               {/* Customer mode */}
-              <Link
-                to="/products"
-                onClick={() => setOpen(false)}
-                className={`block rounded-xl p-3 transition-all ${
+              <div
+                onClick={cardNavigate('/products')}
+                className={`block rounded-xl p-3 cursor-pointer transition-all ${
                   currentMode === 'customer'
                     ? 'bg-accent-50 border-2 border-accent-400 shadow-sm'
                     : 'border-2 border-transparent hover:bg-surface-50 hover:border-brand-200/60'
@@ -107,13 +114,12 @@ export function ExperienceSwitcher() {
                     ))}
                   </div>
                 )}
-              </Link>
+              </div>
 
               {/* Merchant mode */}
-              <Link
-                to="/merchant"
-                onClick={() => setOpen(false)}
-                className={`block rounded-xl p-3 transition-all ${
+              <div
+                onClick={cardNavigate('/merchant')}
+                className={`block rounded-xl p-3 cursor-pointer transition-all ${
                   currentMode === 'merchant'
                     ? 'bg-brand-900 text-white shadow-sm'
                     : 'border-2 border-transparent hover:bg-surface-50 hover:border-brand-200/60'
@@ -148,7 +154,7 @@ export function ExperienceSwitcher() {
                     ))}
                   </div>
                 )}
-              </Link>
+              </div>
             </div>
 
             {/* Footer hint */}
