@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { demoProducts } from '@/data/demo';
+import { demoProducts, demoStats } from '@/data/products';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { Search, SlidersHorizontal, Grid3X3, List, X, Package } from 'lucide-react';
 
 export function ProductCatalog() {
+  useDocumentTitle('Products');
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -63,7 +65,8 @@ export function ProductCatalog() {
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold text-brand-900 tracking-tight">All Products</h1>
           <p className="text-sm text-brand-500 mt-1.5">
-            {filtered.length} {filtered.length === 1 ? 'product' : 'products'} &mdash; every item includes 3D &amp; AR preview
+            {filtered.length} {filtered.length === 1 ? 'product' : 'products'} &mdash;{' '}
+            {demoStats.arReady} of {demoStats.productsSynced} are live in 3D &amp; AR
           </p>
         </div>
       </div>
