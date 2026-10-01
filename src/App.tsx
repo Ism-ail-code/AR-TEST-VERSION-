@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { ToastProvider } from '@/components/ui';
 import { ExperienceSwitcher } from '@/components/ExperienceSwitcher';
 import { StorefrontLayout } from '@/layouts/StorefrontLayout';
@@ -30,14 +30,27 @@ function PageSpinner() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 function NotFound() {
   return (
     <div className="min-h-screen bg-surface-50 flex items-center justify-center px-4">
       <div className="text-center">
         <p className="text-6xl font-bold text-brand-200 mb-4">404</p>
         <h1 className="text-2xl font-bold text-brand-900 mb-2">Page not found</h1>
-        <p className="text-sm text-brand-500 mb-6">The page you&apos;re looking for doesn&apos;t exist or has been moved.</p>
-        <Link to="/" className="inline-flex h-10 px-5 bg-brand-900 text-white rounded-xl text-sm font-medium items-center gap-2 hover:bg-brand-800 transition-colors">
+        <p className="text-sm text-brand-500 mb-6">
+          The page you&apos;re looking for doesn&apos;t exist or has been moved.
+        </p>
+        <Link
+          to="/"
+          className="inline-flex h-10 px-5 bg-brand-900 text-white rounded-xl text-sm font-medium items-center gap-2 hover:bg-brand-800 transition-colors"
+        >
           Back to store
         </Link>
       </div>
@@ -49,8 +62,16 @@ export default function App() {
   return (
     <ToastProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Suspense fallback={<PageSpinner />}>
           <Routes>
+            {/* Customer preview takes over the full window — declared before the
+                merchant shell so it doesn't get wrapped in the sidebar layout. */}
+            <Route
+              path="/merchant/products/:productId/preview"
+              element={<CustomerPreview />}
+            />
+
             {/* Storefront */}
             <Route element={<StorefrontLayout />}>
               <Route path="/" element={<Home />} />
@@ -64,7 +85,6 @@ export default function App() {
               <Route path="products" element={<MerchantProducts />} />
               <Route path="products/:productId" element={<MerchantProductDetail />} />
               <Route path="products/:productId/qr" element={<QRCodePage />} />
-              <Route path="products/:productId/preview" element={<CustomerPreview />} />
               <Route path="analytics" element={<MerchantAnalytics />} />
               <Route path="store" element={<MerchantStore />} />
               <Route path="settings" element={<MerchantSettings />} />
