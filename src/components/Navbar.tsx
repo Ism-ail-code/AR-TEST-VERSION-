@@ -1,13 +1,43 @@
 import { useState } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Menu, X, Search, User } from 'lucide-react';
-import { demoStore, demoProducts } from '@/data/products';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Heart, Menu, X, Search, ShoppingBag } from 'lucide-react';
+import { demoProducts } from '@/data/products';
+import { useShop } from '@/context/ShopContext';
+
+/** Store departments — each one lands on a real filtered catalogue view. */
+const NAV_ITEMS = [
+  { label: 'Home', to: '/' },
+  { label: 'Shop', to: '/products' },
+  { label: 'Living Room', to: '/products?room=Living%20Room', room: 'Living Room' },
+  { label: 'Bedroom', to: '/products?room=Bedroom', room: 'Bedroom' },
+  { label: 'Dining', to: '/products?room=Dining', room: 'Dining' },
+  { label: 'Lighting', to: '/products?category=Lighting', category: 'Lighting' },
+] as const;
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { cartCount, wishlistCount, openCart, openWishlist } = useShop();
+
+  const onCatalog = location.pathname === '/products';
+
+  const isActive = (item: (typeof NAV_ITEMS)[number]) => {
+    if (!onCatalog) return location.pathname === '/' && item.to === '/';
+    if ('room' in item && item.room) return searchParams.get('room') === item.room;
+    if ('category' in item && item.category) return searchParams.get('category') === item.category;
+    if (item.to === '/products')
+      return !searchParams.get('room') && !searchParams.get('category');
+    return false;
+  };
+
+  const closeAll = () => {
+    setMobileOpen(false);
+    setSearchOpen(false);
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,90 +49,91 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-brand-200/40">
-      {/* Top announcement bar */}
-      <div className="bg-brand-900 text-white text-center py-2 px-4 text-2xs sm:text-xs font-medium tracking-wide">
-        Free shipping on orders over $500 &mdash; AR preview available on all products
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-brand-200/50">
+      {/* Announcement */}
+      <div className="bg-brand-900 text-brand-300 text-center py-2 px-4 text-2xs sm:text-xs tracking-wide">
+        Free shipping on orders over $500 &nbsp;&middot;&nbsp; 30-day returns
       </div>
 
       <div className="container-page">
-        <div className="flex items-center justify-between h-16 lg:h-16">
-          {/* Left nav */}
-          <nav className="hidden lg:flex items-center gap-1">
-            <NavLink
-              to="/products"
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm font-medium transition-colors rounded-lg ${
-                  isActive
-                    ? 'text-brand-900 bg-brand-100/60'
-                    : 'text-brand-600 hover:text-brand-900 hover:bg-brand-50'
-                }`
-              }
-            >
-              All Products
-            </NavLink>
-            <NavLink
-              to="/products?category=Seating"
-              className="px-3 py-2 text-sm font-medium text-brand-600 hover:text-brand-900 hover:bg-brand-50 rounded-lg transition-colors"
-            >
-              Seating
-            </NavLink>
-            <NavLink
-              to="/products?category=Tables"
-              className="px-3 py-2 text-sm font-medium text-brand-600 hover:text-brand-900 hover:bg-brand-50 rounded-lg transition-colors"
-            >
-              Tables
-            </NavLink>
-            <NavLink
-              to="/products?category=Lighting"
-              className="px-3 py-2 text-sm font-medium text-brand-600 hover:text-brand-900 hover:bg-brand-50 rounded-lg transition-colors"
-            >
-              Lighting
-            </NavLink>
-          </nav>
+        <div className="h-16 lg:h-[4.5rem] flex items-center justify-between gap-6">
+          {/* Logo + primary nav */}
+          <div className="flex items-center gap-10 min-w-0">
+            <Link to="/" onClick={closeAll} className="shrink-0 group">
+              <span className="block text-base sm:text-lg font-bold text-brand-900 tracking-[0.16em] leading-none group-hover:text-accent-700 transition-colors">
+                CASA LIVING
+              </span>
+              <span className="hidden sm:block text-2xs text-brand-400 uppercase tracking-[0.28em] mt-1.5">
+                Furniture &amp; Design
+              </span>
+            </Link>
 
-          {/* Center logo */}
-          <Link to="/" className="flex items-center gap-3 group absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0">
-            <div className="w-9 h-9 rounded-xl bg-brand-900 flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-              <span className="text-white font-bold text-sm tracking-tight">{demoStore.name.split(' ').map(w => w[0]).join('')}</span>
-            </div>
-            <div className="hidden sm:block">
-              <span className="text-base font-bold text-brand-900 tracking-tight block leading-none">{demoStore.name}</span>
-              <span className="text-2xs text-brand-400 tracking-wider uppercase">Furniture &amp; Design</span>
-            </div>
-          </Link>
+            <nav className="hidden lg:flex items-center gap-7" aria-label="Main">
+              {NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  aria-current={isActive(item) ? 'page' : undefined}
+                  className={`relative text-[0.8125rem] font-medium transition-colors py-1 ${
+                    isActive(item)
+                      ? 'text-brand-900'
+                      : 'text-brand-500 hover:text-brand-900'
+                  }`}
+                >
+                  {item.label}
+                  <span
+                    className={`absolute left-0 -bottom-0.5 h-px bg-brand-900 transition-all duration-300 ${
+                      isActive(item) ? 'w-full' : 'w-0'
+                    }`}
+                  />
+                </Link>
+              ))}
+            </nav>
+          </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             {/* Search */}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className="p-2.5 rounded-xl text-brand-500 hover:text-brand-900 hover:bg-brand-100 transition-colors"
-              aria-label="Toggle search"
+              aria-label={searchOpen ? 'Close search' : 'Search'}
+              aria-expanded={searchOpen}
             >
               <Search className="w-5 h-5" />
             </button>
 
-            {/* Account */}
-            <button className="hidden sm:flex p-2.5 rounded-xl text-brand-500 hover:text-brand-900 hover:bg-brand-100 transition-colors" aria-label="Account">
-              <User className="w-5 h-5" />
+            {/* Wishlist */}
+            <button
+              onClick={openWishlist}
+              className="relative p-2.5 rounded-xl text-brand-500 hover:text-brand-900 hover:bg-brand-100 transition-colors"
+              aria-label={`Wishlist (${wishlistCount})`}
+            >
+              <Heart className="w-5 h-5" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-brand-900 text-white text-[0.5625rem] font-bold rounded-full flex items-center justify-center">
+                  {wishlistCount}
+                </span>
+              )}
             </button>
 
-            {/* Cart */}
-            <button className="relative p-2.5 rounded-xl text-brand-500 hover:text-brand-900 hover:bg-brand-100 transition-colors" aria-label="Shopping cart">
+            {/* Bag */}
+            <button
+              onClick={openCart}
+              className="relative p-2.5 rounded-xl text-brand-500 hover:text-brand-900 hover:bg-brand-100 transition-colors"
+              aria-label={`Shopping bag (${cartCount})`}
+            >
               <ShoppingBag className="w-5 h-5" />
-              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-accent-500 text-white text-2xs font-bold rounded-full flex items-center justify-center">
-                0
+              <span
+                className={`absolute -top-0.5 -right-0.5 w-4.5 h-4.5 rounded-full flex items-center justify-center text-[0.5625rem] font-bold transition-colors ${
+                  cartCount > 0
+                    ? 'bg-accent-500 text-white'
+                    : 'bg-brand-200 text-brand-600'
+                }`}
+              >
+                {cartCount}
               </span>
             </button>
-
-            {/* Merchant link */}
-            <NavLink
-              to="/merchant"
-              className="hidden lg:flex ml-2 px-3.5 py-2 text-sm font-medium text-brand-500 hover:text-brand-900 hover:bg-brand-100 rounded-xl transition-colors"
-            >
-              Merchant
-            </NavLink>
 
             {/* Mobile menu toggle */}
             <button
@@ -123,7 +154,7 @@ export function Navbar() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-400" />
               <input
                 type="text"
-                placeholder="Search furniture, materials, styles..."
+                placeholder="Search chairs, sofas, lighting..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
@@ -153,7 +184,7 @@ export function Navbar() {
                     <Link
                       key={product.id}
                       to={`/product/${product.slug}`}
-                      onClick={() => { setSearchQuery(''); setSearchOpen(false); }}
+                      onClick={closeAll}
                       className="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 transition-colors"
                       role="option"
                     >
@@ -173,48 +204,21 @@ export function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="lg:hidden border-t border-brand-200/60 bg-white animate-slide-down">
-          <div className="container-page py-4 space-y-1">
-            <NavLink
-              to="/products"
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                `block px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                  isActive ? 'text-brand-900 bg-brand-100/60' : 'text-brand-600 hover:bg-brand-50'
-                }`
-              }
-            >
-              All Products
-            </NavLink>
-            <NavLink
-              to="/products?category=Seating"
-              onClick={() => setMobileOpen(false)}
-              className="block px-4 py-3 rounded-xl text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors"
-            >
-              Seating
-            </NavLink>
-            <NavLink
-              to="/products?category=Tables"
-              onClick={() => setMobileOpen(false)}
-              className="block px-4 py-3 rounded-xl text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors"
-            >
-              Tables
-            </NavLink>
-            <NavLink
-              to="/products?category=Lighting"
-              onClick={() => setMobileOpen(false)}
-              className="block px-4 py-3 rounded-xl text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors"
-            >
-              Lighting
-            </NavLink>
-            <div className="border-t border-brand-200/60 pt-2 mt-2">
-              <NavLink
-                to="/merchant"
-                onClick={() => setMobileOpen(false)}
-                className="block px-4 py-3 rounded-xl text-sm font-medium text-brand-500 hover:bg-brand-50 transition-colors"
+          <div className="container-page py-4 space-y-0.5">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.label}
+                to={item.to}
+                onClick={closeAll}
+                className={`block px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                  isActive(item)
+                    ? 'text-brand-900 bg-brand-100/60'
+                    : 'text-brand-600 hover:bg-brand-50'
+                }`}
               >
-                Merchant Dashboard
-              </NavLink>
-            </div>
+                {item.label}
+              </Link>
+            ))}
           </div>
         </div>
       )}

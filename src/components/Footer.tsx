@@ -20,15 +20,22 @@ export function Footer() {
             <p className="text-sm leading-relaxed text-brand-400">
               {demoStore.tagline}
             </p>
+            <Link
+              to="/merchant"
+              className="mt-4 inline-flex items-center gap-1.5 text-2xs text-brand-500 hover:text-white transition-colors"
+            >
+              Merchant dashboard <ArrowUpRight className="w-3 h-3" />
+            </Link>
           </div>
 
           {/* Quick Links */}
           <div>
             <h4 className="text-xs font-semibold text-brand-500 uppercase tracking-wider mb-4">Shop</h4>
             <ul className="space-y-2.5">
-              <li><Link to="/products" className="text-sm text-brand-400 hover:text-white transition-colors">All Products</Link></li>
-              <li><Link to="/products?category=Seating" className="text-sm text-brand-400 hover:text-white transition-colors">Seating</Link></li>
-              <li><Link to="/products?category=Tables" className="text-sm text-brand-400 hover:text-white transition-colors">Tables</Link></li>
+              <li><Link to="/products" className="text-sm text-brand-400 hover:text-white transition-colors">All furniture</Link></li>
+              <li><Link to="/products?room=Living%20Room" className="text-sm text-brand-400 hover:text-white transition-colors">Living Room</Link></li>
+              <li><Link to="/products?room=Bedroom" className="text-sm text-brand-400 hover:text-white transition-colors">Bedroom</Link></li>
+              <li><Link to="/products?room=Dining" className="text-sm text-brand-400 hover:text-white transition-colors">Dining</Link></li>
               <li><Link to="/products?category=Lighting" className="text-sm text-brand-400 hover:text-white transition-colors">Lighting</Link></li>
             </ul>
           </div>
@@ -93,7 +100,8 @@ export function Footer() {
             &copy; {year} {demoStore.name}. All rights reserved.
           </p>
           <p className="text-2xs text-brand-600">
-            Rapidify &mdash; AR Commerce Platform
+            Designed in Austin, TX &nbsp;&middot;&nbsp; AR by{' '}
+            <span className="text-brand-500">Rapidify</span>
           </p>
         </div>
       </div>

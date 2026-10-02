@@ -44,7 +44,7 @@ export const demoStore: Store = {
   logoInitials: 'CL',
   tagline: 'Modern furniture for everyday living',
   description:
-    'Casa Living designs modern, minimalist furniture built from sustainably sourced materials. Every piece is made to last and, thanks to Rapidify, ships with an interactive 3D and AR shopping experience.',
+    'Casa Living designs modern, minimalist furniture built from sustainably sourced materials. Every piece is made to last, hand-finished in small batches, and delivered free across the continental US.',
   location: {
     address: '247 Design District Blvd',
     city: 'Austin',
@@ -82,6 +82,7 @@ export const demoProducts: Product[] = [
     currency: 'USD',
     category: 'Seating',
     subcategory: 'Lounge Chairs',
+    rooms: ['Living Room', 'Bedroom'],
     tags: ['scandinavian', 'accent-chair', 'velvet', 'oak'],
     shortDescription:
       'Sculpted mid-century lounge chair with a deep velvet seat and solid oak legs.',
@@ -140,6 +141,7 @@ export const demoProducts: Product[] = [
     currency: 'USD',
     category: 'Seating',
     subcategory: 'Sofas',
+    rooms: ['Living Room'],
     tags: ['curved', 'velvet', 'statement', 'modular-look'],
     shortDescription:
       'A curved three-seater in plush velvet with slender cast-metal legs.',
@@ -201,6 +203,7 @@ export const demoProducts: Product[] = [
     currency: 'USD',
     category: 'Tables',
     subcategory: 'Coffee Tables',
+    rooms: ['Living Room', 'Dining'],
     tags: ['glass', 'minimal', 'architectural'],
     shortDescription:
       'Floating smoked-glass top on a single continuous polished-steel base.',
@@ -247,6 +250,7 @@ export const demoProducts: Product[] = [
     currency: 'USD',
     category: 'Lighting',
     subcategory: 'Table Lamps',
+    rooms: ['Living Room', 'Bedroom', 'Dining'],
     tags: ['globe', 'iridescent', 'ambient', 'designer'],
     shortDescription:
       'Iridescent glass globe under a deep black drum shade.',
@@ -303,6 +307,7 @@ export const demoProducts: Product[] = [
     currency: 'USD',
     category: 'Seating',
     subcategory: 'Ottomans & Poufs',
+    rooms: ['Living Room', 'Bedroom'],
     tags: ['pouf', 'silk', 'hand-finished', 'accent'],
     shortDescription:
       'Hand-gathered silk pouf with a dense, supportive fill.',

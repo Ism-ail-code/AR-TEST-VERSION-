@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { demoProducts, demoStats } from '@/data/products';
+import { demoProducts } from '@/data/products';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -12,18 +12,22 @@ export function ProductCatalog() {
 
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All');
+  const [selectedRoom, setSelectedRoom] = useState(searchParams.get('room') || 'All');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating'>('featured');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Sync URL params on mount
+  // Sync URL params on mount / navigation
   useEffect(() => {
     const cat = searchParams.get('category');
+    const room = searchParams.get('room');
     const q = searchParams.get('search');
-    if (cat) setSelectedCategory(cat);
+    setSelectedCategory(cat ?? 'All');
+    setSelectedRoom(room ?? 'All');
     if (q) setSearch(q);
   }, [searchParams]);
 
   const allCategories = ['All', ...new Set(demoProducts.map((p) => p.category))];
+  const allRooms = ['All', ...new Set(demoProducts.flatMap((p) => p.rooms))];
 
   let filtered = demoProducts.filter((product) => {
     const q = search.toLowerCase();
@@ -35,7 +39,8 @@ export function ProductCatalog() {
       product.category.toLowerCase().includes(q) ||
       product.tags.some((t) => t.toLowerCase().includes(q));
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesRoom = selectedRoom === 'All' || product.rooms.includes(selectedRoom);
+    return matchesSearch && matchesCategory && matchesRoom;
   });
 
   if (sortBy === 'price-asc') filtered = [...filtered].sort((a, b) => a.price - b.price);
@@ -53,20 +58,46 @@ export function ProductCatalog() {
     setSearchParams(params, { replace: true });
   };
 
+  const handleRoomChange = (room: string) => {
+    setSelectedRoom(room);
+    const params = new URLSearchParams(searchParams);
+    if (room === 'All') {
+      params.delete('room');
+    } else {
+      params.set('room', room);
+    }
+    setSearchParams(params, { replace: true });
+  };
+
+  const clearFilters = () => {
+    setSearch('');
+    setSelectedCategory('All');
+    setSelectedRoom('All');
+    setSearchParams(new URLSearchParams(), { replace: true });
+  };
+
+  const heading =
+    selectedRoom !== 'All' ? selectedRoom : selectedCategory !== 'All' ? selectedCategory : 'Shop';
+  const hasFilters = Boolean(search) || selectedCategory !== 'All' || selectedRoom !== 'All';
+
   return (
     <div className="container-page py-8 sm:py-10 lg:py-12">
       <Breadcrumbs
-        items={[{ label: 'Home', href: '/' }, { label: 'Products' }]}
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Shop', href: '/products' },
+          ...(hasFilters ? [{ label: heading }] : []),
+        ]}
         className="mb-6"
       />
 
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-brand-900 tracking-tight">All Products</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-brand-900 tracking-tight">{heading}</h1>
           <p className="text-sm text-brand-500 mt-1.5">
-            {filtered.length} {filtered.length === 1 ? 'product' : 'products'} &mdash;{' '}
-            {demoStats.arReady} of {demoStats.productsSynced} are live in 3D &amp; AR
+            {filtered.length} {filtered.length === 1 ? 'piece' : 'pieces'} &middot; free shipping
+            over $500
           </p>
         </div>
       </div>
@@ -127,6 +158,23 @@ export function ProductCatalog() {
         </div>
       </div>
 
+      {/* Room departments */}
+      <div className="flex gap-2 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
+        {allRooms.map((room) => (
+          <button
+            key={room}
+            onClick={() => handleRoomChange(room)}
+            className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+              selectedRoom === room
+                ? 'bg-accent-500 text-white shadow-sm'
+                : 'bg-white border border-brand-200/60 text-brand-600 hover:border-accent-300 hover:text-accent-700'
+            }`}
+          >
+            {room === 'All' ? 'All rooms' : room}
+          </button>
+        ))}
+      </div>
+
       {/* Category pills */}
       <div className="flex gap-2 mb-8 overflow-x-auto pb-1 -mx-1 px-1">
         {allCategories.map((cat) => (
@@ -139,19 +187,25 @@ export function ProductCatalog() {
                 : 'bg-white border border-brand-200/60 text-brand-600 hover:border-brand-400 hover:text-brand-900'
             }`}
           >
-            {cat}
+            {cat === 'All' ? 'All furniture' : cat}
           </button>
         ))}
       </div>
 
       {/* Active filters indicator */}
-      {(search || selectedCategory !== 'All') && (
-        <div className="flex items-center gap-2 mb-6 text-sm">
+      {hasFilters && (
+        <div className="flex items-center gap-2 mb-6 text-sm flex-wrap">
           <span className="text-brand-500">Filters:</span>
           {search && (
             <span className="inline-flex items-center gap-1.5 bg-accent-50 text-accent-700 px-2.5 py-1 rounded-lg font-medium">
               &ldquo;{search}&rdquo;
               <button onClick={() => setSearch('')} className="hover:text-accent-900"><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {selectedRoom !== 'All' && (
+            <span className="inline-flex items-center gap-1.5 bg-accent-50 text-accent-700 px-2.5 py-1 rounded-lg font-medium">
+              {selectedRoom}
+              <button onClick={() => handleRoomChange('All')} className="hover:text-accent-900"><X className="w-3 h-3" /></button>
             </span>
           )}
           {selectedCategory !== 'All' && (
@@ -161,7 +215,7 @@ export function ProductCatalog() {
             </span>
           )}
           <button
-            onClick={() => { setSearch(''); handleCategoryChange('All'); }}
+            onClick={clearFilters}
             className="text-brand-400 hover:text-brand-700 ml-1 underline"
           >
             Clear all
@@ -194,7 +248,7 @@ export function ProductCatalog() {
             Try adjusting your search or filters to find what you&apos;re looking for.
           </p>
           <button
-            onClick={() => { setSearch(''); handleCategoryChange('All'); }}
+            onClick={clearFilters}
             className="mt-5 h-10 px-5 bg-brand-100 text-brand-700 rounded-xl text-sm font-medium hover:bg-brand-200 transition-colors"
           >
             Clear all filters

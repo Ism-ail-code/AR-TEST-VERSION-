@@ -53,6 +53,8 @@ export interface Product {
 
   category: string;
   subcategory: string;
+  /** Store departments used by the storefront navigation (static). */
+  rooms: string[];
   tags: string[];
 
   shortDescription: string;
