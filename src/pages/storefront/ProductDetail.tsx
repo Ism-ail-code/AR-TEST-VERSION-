@@ -149,14 +149,6 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
             >
               <Box className="w-4 h-4" /> 3D View
             </button>
-            {product.arReady && (
-              <Link
-                to={`/ar/${product.id}`}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-all shadow-sm shadow-accent-500/20"
-              >
-                <Eye className="w-4 h-4" /> View in AR
-              </Link>
-            )}
           </div>
 
           <div className="relative">
@@ -168,11 +160,14 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
                   className="w-full h-full object-cover"
                 />
                 {product.arReady && (
-                  <div className="absolute top-4 left-4">
-                    <Badge variant="accent" size="md" icon={<Eye className="w-3.5 h-3.5" />}>
-                      AR available
-                    </Badge>
-                  </div>
+                  <Link
+                    to={`/ar/${product.id}`}
+                    aria-label={`View ${product.name} in AR`}
+                    className="group/ar absolute bottom-4 right-4 z-10 inline-flex items-center gap-2 bg-white/90 backdrop-blur-md pl-3.5 pr-4 py-2.5 rounded-full text-xs font-semibold text-brand-800 shadow-md ring-1 ring-black/5 transition-all duration-200 hover:bg-accent-500 hover:text-white hover:ring-accent-500 hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                  >
+                    <Eye className="w-4 h-4 text-accent-600 transition-colors group-hover/ar:text-white" />
+                    View in AR
+                  </Link>
                 )}
               </div>
             ) : (
@@ -228,17 +223,6 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
                   <Box className="w-5 h-5 text-brand-600" />
                   <span className="text-2xs font-semibold text-brand-600">3D</span>
                 </button>
-              )}
-
-              {product.arReady && (
-                <Link
-                  to={`/ar/${product.id}`}
-                  aria-label="Open AR experience"
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border-2 border-transparent hover:border-accent-500 bg-accent-50 flex flex-col items-center justify-center gap-0.5 transition-all opacity-80 hover:opacity-100 shrink-0"
-                >
-                  <Eye className="w-5 h-5 text-accent-600" />
-                  <span className="text-2xs font-semibold text-accent-600">AR</span>
-                </Link>
               )}
             </div>
           )}
