@@ -9,6 +9,7 @@ import {
 import { Breadcrumbs, Badge, ProductCard, ProductQRCode } from '@/components/ui';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useToast } from '@/components/ui';
+import { useShop } from '@/context/ShopContext';
 import {
   Box,
   Eye,
@@ -26,8 +27,7 @@ import {
   ArrowRight,
   QrCode,
   Copy,
-  Printer,
-  Sparkles,
+  ShoppingBag,
 } from 'lucide-react';
 
 const ModelViewer = lazy(() =>
@@ -39,6 +39,7 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
   const lookup = productSlug ?? productId;
   const product = demoProducts.find((p) => p.slug === lookup || p.id === lookup);
   const { toast } = useToast();
+  const { addToCart, toggleWishlist, isWishlisted } = useShop();
 
   useDocumentTitle(product?.name);
 
@@ -78,6 +79,17 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
 
   const related = getRelatedProducts(product);
   const reviews = getReviewsForProduct(product.id);
+  const saved = isWishlisted(product.id);
+  /** Friendly word for "view this ___ in your space" copy. */
+  const noun = /sofa/i.test(product.name)
+    ? 'sofa'
+    : /chair/i.test(product.name)
+      ? 'chair'
+      : /table/i.test(product.name)
+        ? 'table'
+        : /lamp/i.test(product.name)
+          ? 'lamp'
+          : 'piece';
   const activeVariant = product.variants.find((v) => v.id === selectedVariant);
   const currentPrice = activeVariant ? product.price + activeVariant.priceModifier : product.price;
   const colorVariants = product.variants.filter((v) => v.type === 'color');
@@ -103,7 +115,7 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
       <Breadcrumbs
         items={[
           { label: 'Home', href: '/' },
-          { label: 'Products', href: '/products' },
+          { label: 'Shop', href: '/products' },
           { label: product.name },
         ]}
         className="mb-6 lg:mb-8"
@@ -158,7 +170,7 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
                 {product.arReady && (
                   <div className="absolute top-4 left-4">
                     <Badge variant="accent" size="md" icon={<Eye className="w-3.5 h-3.5" />}>
-                      AR ready
+                      AR available
                     </Badge>
                   </div>
                 )}
@@ -377,37 +389,79 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
           <div className="mt-8 space-y-3">
             <button
               disabled={!product.inStock}
-              onClick={() =>
-                toast('success', `${quantity} × ${product.name} added (demo — no checkout)`)
-              }
+              onClick={() => {
+                addToCart(product.id, quantity, activeVariant?.id ?? null);
+                toast('success', `${quantity} × ${product.name} added to your bag`);
+              }}
               className="w-full h-13 bg-brand-900 text-white rounded-xl text-sm font-semibold hover:bg-brand-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
             >
-              <Package className="w-4 h-4" />
+              <ShoppingBag className="w-4 h-4" />
               Add to Cart — ${(currentPrice * quantity).toLocaleString()}
             </button>
 
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => (product.modelUrl ? setViewerMode('3d') : undefined)}
-                disabled={!product.modelUrl}
-                className="h-12 bg-surface-100 border border-brand-200/60 text-brand-800 rounded-xl text-sm font-semibold hover:bg-brand-100 hover:border-brand-300 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={() => {
+                  toggleWishlist(product.id);
+                  toast('info', saved ? 'Removed from your wishlist' : 'Saved to your wishlist');
+                }}
+                aria-pressed={saved}
+                className={`h-12 rounded-xl text-sm font-semibold border transition-all flex items-center justify-center gap-2 ${
+                  saved
+                    ? 'bg-accent-50 border-accent-300 text-accent-700'
+                    : 'bg-white border-brand-200/60 text-brand-800 hover:border-brand-400'
+                }`}
               >
-                <Box className="w-4 h-4" /> View in 3D
+                <Heart className={`w-4 h-4 ${saved ? 'fill-accent-500 text-accent-500' : ''}`} />
+                {saved ? 'Wishlisted' : 'Wishlist'}
               </button>
 
-              {product.arReady ? (
+              <button
+                onClick={handleShare}
+                className="h-12 bg-white border border-brand-200/60 text-brand-800 rounded-xl text-sm font-semibold hover:border-brand-400 transition-all flex items-center justify-center gap-2"
+              >
+                <Share2 className="w-4 h-4" /> Share
+              </button>
+            </div>
+          </div>
+
+          {/* ─────────── See it in your space ─────────── */}
+          <div className="mt-8 rounded-2xl border border-brand-200/70 bg-surface-100 p-5 sm:p-6">
+            <div className="flex items-center gap-2 mb-2.5">
+              <Eye className="w-4 h-4 text-accent-600" />
+              <span className="text-2xs font-semibold uppercase tracking-wider text-accent-600">
+                Augmented reality
+              </span>
+            </div>
+
+            <h2 className="text-lg font-bold text-brand-900">See it in your space</h2>
+            <p className="text-sm text-brand-600 mt-1.5 leading-relaxed">
+              Not sure how it will look? View the {noun} in your actual room before buying.
+            </p>
+
+            {product.arReady ? (
+              <div className="mt-4 flex flex-col sm:flex-row gap-2.5">
                 <Link
                   to={`/ar/${product.id}`}
-                  className="h-12 bg-accent-500 text-white rounded-xl text-sm font-semibold hover:bg-accent-600 transition-all flex items-center justify-center gap-2 shadow-sm shadow-accent-500/25"
+                  className="h-11 px-5 bg-accent-500 text-white rounded-xl text-sm font-semibold hover:bg-accent-600 transition-colors inline-flex items-center justify-center gap-2 shadow-sm shadow-accent-500/25"
                 >
                   <Eye className="w-4 h-4" /> View in AR
                 </Link>
-              ) : (
-                <div className="h-12 bg-surface-100 border border-dashed border-brand-300 text-brand-400 rounded-xl text-sm font-medium flex items-center justify-center gap-2">
-                  <Sparkles className="w-4 h-4" /> AR coming soon
-                </div>
-              )}
-            </div>
+                <a
+                  href="#qr-code"
+                  className="h-11 px-5 bg-white border border-brand-200 text-brand-800 rounded-xl text-sm font-semibold hover:border-brand-400 transition-colors inline-flex items-center justify-center gap-2"
+                >
+                  <QrCode className="w-4 h-4" /> Scan QR to view in AR
+                </a>
+              </div>
+            ) : (
+              <p className="mt-3 text-xs text-brand-500 leading-relaxed">
+                3D and AR aren&apos;t available for this piece yet — the photos above show every
+                angle.
+              </p>
+            )}
+
+            <p className="mt-4 text-2xs text-brand-400">AR by Rapidify</p>
           </div>
 
           <div className="flex items-center gap-5 mt-6 pt-6 border-t border-brand-200/60">
@@ -422,120 +476,32 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
               </div>
             ))}
           </div>
-
-          <div className="flex items-center gap-4 mt-4">
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-1.5 text-xs text-brand-500 hover:text-brand-700 transition-colors"
-            >
-              <Share2 className="w-3.5 h-3.5" /> Share
-            </button>
-            <button
-              onClick={() => toast('info', 'Saved to wishlist (demo)')}
-              className="flex items-center gap-1.5 text-xs text-brand-500 hover:text-error transition-colors"
-            >
-              <Heart className="w-3.5 h-3.5" /> Save to wishlist
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* ─────────── 3D & AR panel ─────────── */}
-      <section className="mt-12 lg:mt-16 bg-surface-100 rounded-3xl p-6 sm:p-8">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-brand-900">3D &amp; AR Experience</h2>
-          {product.arReady ? (
-            <Badge variant="success" size="md" icon={<Check className="w-3 h-3" />}>
-              Activated by Rapidify
-            </Badge>
-          ) : (
-            <Badge variant="warning" size="md">Awaiting activation</Badge>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div className="bg-white rounded-2xl p-5 border border-brand-200/60">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Box className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-brand-900">View in 3D</h3>
-                <p className="text-2xs text-brand-500">Inspect every detail</p>
-              </div>
-            </div>
-            <p className="text-xs text-brand-600 leading-relaxed">
-              Rotate, zoom and explore the {product.name} from every angle in the real-time 3D
-              viewer. Examine materials, proportions and craftsmanship before buying.
-            </p>
-            <button
-              onClick={() => product.modelUrl && setViewerMode('3d')}
-              disabled={!product.modelUrl}
-              className="mt-3 text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {product.modelUrl ? 'Open 3D viewer' : 'Model not generated yet'}{' '}
-              <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
-
-          <div
-            className={`rounded-2xl p-5 border ${
-              product.arReady
-                ? 'bg-white border-brand-200/60'
-                : 'bg-surface-50 border-dashed border-brand-300'
-            }`}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  product.arReady ? 'bg-accent-50' : 'bg-brand-100'
-                }`}
-              >
-                <Eye
-                  className={`w-5 h-5 ${product.arReady ? 'text-accent-600' : 'text-brand-400'}`}
-                />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-brand-900">View in AR</h3>
-                <p className="text-2xs text-brand-500">Place it in your room</p>
-              </div>
-            </div>
-            <p className="text-xs text-brand-600 leading-relaxed">
-              Use your phone camera to place the {product.name} in your actual space at true scale
-              next to your existing furniture.
-            </p>
-            {product.arReady ? (
-              <Link
-                to={`/ar/${product.id}`}
-                className="mt-3 text-xs font-medium text-accent-600 hover:text-accent-700 flex items-center gap-1"
-              >
-                Open AR experience <ArrowRight className="w-3 h-3" />
-              </Link>
-            ) : (
-              <p className="mt-3 text-xs text-brand-400">
-                The merchant hasn&apos;t generated a model for this product yet.
-              </p>
-            )}
-          </div>
-        </div>
-      </section>
-
       {/* ─────────── QR section ─────────── */}
-      <section className="mt-8 lg:mt-10 rounded-3xl border border-brand-200/60 bg-white overflow-hidden">
+      <section
+        id="qr-code"
+        className="mt-8 lg:mt-10 rounded-3xl border border-brand-200/60 bg-white overflow-hidden scroll-mt-32"
+      >
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 p-6 sm:p-8 items-center">
           <div>
             <div className="flex items-center gap-2 mb-3">
               <QrCode className="w-4 h-4 text-accent-500" />
               <span className="text-xs font-semibold text-accent-600 uppercase tracking-wider">
-                Take it to the showroom
+                On your phone
               </span>
             </div>
+
             <h2 className="text-xl sm:text-2xl font-bold text-brand-900 tracking-tight">
-              Scan to see it in your space
+              View this {noun} in your space
             </h2>
             <p className="text-sm text-brand-500 mt-2 leading-relaxed max-w-lg">
-              Every Rapidify product has its own QR code. Point a phone camera at it — in-store or
-              from this page — to land straight on this product and open the AR experience.
+              Scan with your phone camera. This page opens on your phone and the{' '}
+              <Link to={`/ar/${product.id}`} className="text-accent-600 hover:text-accent-700">
+                {product.name}
+              </Link>{' '}
+              drops straight into your room.
             </p>
 
             <div className="mt-4 flex items-center gap-2 bg-surface-100 border border-brand-200/60 rounded-xl px-3 py-2.5 max-w-md">
@@ -549,45 +515,30 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
               </button>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                to={`/merchant/products/${product.id}/qr`}
-                className="h-10 px-4 bg-brand-900 text-white rounded-xl text-xs font-semibold hover:bg-brand-800 transition-colors inline-flex items-center gap-1.5"
-              >
-                <Printer className="w-3.5 h-3.5" /> Open printable poster
-              </Link>
-              {product.arReady && (
-                <Link
-                  to={`/ar/${product.id}`}
-                  className="h-10 px-4 bg-accent-50 text-accent-700 border border-accent-200 rounded-xl text-xs font-semibold hover:bg-accent-100 transition-colors inline-flex items-center gap-1.5"
-                >
-                  <Eye className="w-3.5 h-3.5" /> View in AR
-                </Link>
-              )}
-            </div>
+            <p className="mt-4 text-2xs text-brand-400">
+              Each piece has its own code — no two products share one.
+            </p>
           </div>
 
-          <div className="justify-self-center md:justify-self-end">
+          <div className="justify-self-center md:justify-self-end text-center">
             {product.qrReady ? (
-              <div className="text-center">
-                <ProductQRCode url={productUrl} size={176} showDownload downloadFileName={`rapidify-${product.slug}`} />
-                <p className="text-2xs text-brand-400 mt-3 max-w-[13rem]">
-                  Encodes this product&apos;s exact URL
-                </p>
-              </div>
+              <>
+                <ProductQRCode
+                  url={productUrl}
+                  size={176}
+                  showDownload
+                  downloadFileName={`casa-living-${product.slug}`}
+                />
+                <p className="text-sm font-semibold text-brand-900 mt-3">{product.name}</p>
+                <p className="text-2xs text-brand-400 mt-0.5">Scan to open on your phone</p>
+              </>
             ) : (
               <div className="w-[228px] rounded-2xl border-2 border-dashed border-brand-300 bg-surface-50 p-6 text-center">
                 <QrCode className="w-8 h-8 text-brand-300 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-brand-700">QR not generated</p>
+                <p className="text-sm font-semibold text-brand-700">No QR code yet</p>
                 <p className="text-2xs text-brand-500 mt-1.5 leading-relaxed">
-                  Rapidify generates a code for this product once its 3D model is activated.
+                  A code appears here once this piece is available in 3D.
                 </p>
-                <Link
-                  to={`/merchant/products/${product.id}`}
-                  className="mt-3 inline-flex text-2xs font-semibold text-accent-600 hover:text-accent-700"
-                >
-                  Open in dashboard →
-                </Link>
               </div>
             )}
           </div>

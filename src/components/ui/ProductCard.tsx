@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, Star, Box, Check, ArrowRight } from 'lucide-react';
+import { Eye, Star, Box, Check, Heart, ArrowRight } from 'lucide-react';
 import type { Product } from '@/types';
+import { useShop } from '@/context/ShopContext';
 
 interface ProductCardProps {
   product: Product;
@@ -12,7 +13,9 @@ export function ProductCard({ product, className = '', layout = 'grid' }: Produc
   const primaryImage = product.images.find((img) => img.isPrimary) ?? product.images[0];
   const colorVariants = product.variants.filter((v) => v.type === 'color');
   const navigate = useNavigate();
+  const { toggleWishlist, isWishlisted } = useShop();
   const detailPath = `/product/${product.slug}`;
+  const saved = isWishlisted(product.id);
 
   const arChip = product.arReady ? (
     <span className="inline-flex items-center gap-1 bg-accent-500 text-white text-2xs font-semibold px-2 py-1 rounded-lg shadow-sm backdrop-blur-sm">
@@ -74,7 +77,7 @@ export function ProductCard({ product, className = '', layout = 'grid' }: Produc
                 to={detailPath}
                 className="px-4 py-2 bg-brand-900 text-white rounded-lg text-xs font-semibold hover:bg-brand-800 transition-colors inline-flex items-center gap-1.5"
               >
-                View Product <ArrowRight className="w-3 h-3" />
+                View Details <ArrowRight className="w-3 h-3" />
               </Link>
               {product.arReady && (
                 <button
@@ -96,16 +99,15 @@ export function ProductCard({ product, className = '', layout = 'grid' }: Produc
     <div
       className={`group bg-white rounded-2xl border border-brand-200/60 overflow-hidden hover:shadow-card-hover transition-all duration-300 flex flex-col ${className}`}
     >
-      <Link
-        to={detailPath}
-        className="block relative aspect-[4/5] bg-brand-100 overflow-hidden"
-      >
-        <img
-          src={primaryImage?.url}
-          alt={primaryImage?.alt}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
+      <div className="relative aspect-[4/5] bg-brand-100 overflow-hidden">
+        <Link to={detailPath} className="absolute inset-0 block">
+          <img
+            src={primaryImage?.url}
+            alt={primaryImage?.alt}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+        </Link>
 
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
           {arChip}
@@ -116,8 +118,22 @@ export function ProductCard({ product, className = '', layout = 'grid' }: Produc
           )}
         </div>
 
+        <button
+          type="button"
+          onClick={() => toggleWishlist(product.id)}
+          aria-pressed={saved}
+          aria-label={saved ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`}
+          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-sm backdrop-blur-sm transition-colors ${
+            saved
+              ? 'bg-accent-500 text-white'
+              : 'bg-white/90 text-brand-500 hover:text-accent-600 hover:bg-white'
+          }`}
+        >
+          <Heart className={`w-4 h-4 ${saved ? 'fill-white' : ''}`} />
+        </button>
+
         {colorVariants.length > 1 && (
-          <div className="absolute bottom-3 left-3 flex gap-1.5">
+          <div className="absolute bottom-3 left-3 flex gap-1.5 pointer-events-none">
             {colorVariants.slice(0, 5).map((v) => (
               <div
                 key={v.id}
@@ -128,7 +144,7 @@ export function ProductCard({ product, className = '', layout = 'grid' }: Produc
             ))}
           </div>
         )}
-      </Link>
+      </div>
 
       <div className="p-4 flex flex-col flex-1">
         <div className="flex items-center gap-2 mb-2">
@@ -166,29 +182,31 @@ export function ProductCard({ product, className = '', layout = 'grid' }: Produc
           </span>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <Link
-            to={detailPath}
-            className="h-9 bg-brand-900 text-white rounded-lg text-xs font-semibold hover:bg-brand-800 transition-colors flex items-center justify-center gap-1.5"
-          >
-            View Product
-          </Link>
-          {product.arReady ? (
+        {product.arReady ? (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Link
+              to={detailPath}
+              className="h-9 bg-brand-900 text-white rounded-lg text-xs font-semibold hover:bg-brand-800 transition-colors flex items-center justify-center gap-1.5"
+            >
+              View Details
+            </Link>
             <button
               onClick={() => navigate(`/ar/${product.id}`)}
               className="h-9 bg-accent-500 text-white rounded-lg text-xs font-semibold hover:bg-accent-600 transition-colors flex items-center justify-center gap-1.5 shadow-sm shadow-accent-500/20"
             >
               <Eye className="w-3.5 h-3.5" /> View in AR
             </button>
-          ) : (
+          </div>
+        ) : (
+          <div className="mt-4">
             <Link
               to={detailPath}
-              className="h-9 bg-surface-100 border border-brand-200/70 text-brand-500 rounded-lg text-xs font-medium hover:bg-brand-100 transition-colors flex items-center justify-center gap-1.5"
+              className="h-9 bg-brand-900 text-white rounded-lg text-xs font-semibold hover:bg-brand-800 transition-colors flex items-center justify-center gap-1.5"
             >
-              <Box className="w-3.5 h-3.5" /> 3D soon
+              View Details
             </Link>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
