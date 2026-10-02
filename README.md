@@ -27,10 +27,10 @@ Both `npm run build` and `npm run lint` pass with zero errors and zero warnings.
 
 | # | Where | What to look at |
 |---|-------|-----------------|
-| 1 | `/` | Marketing homepage: the 6-step *Rapidify flow* story, AR-ready products, QR poster preview |
-| 2 | `/products` | Catalogue — search, category filter, sort, grid/list toggle |
-| 3 | `/product/oslo-lounge-chair` | Product page: **Photos / 3D** toggle, variants, specs, reviews, and the product's own QR code |
-| 4 | `/ar/prod-001` | Full-screen, phone-first AR: **Place · Move · Rotate · Scale · Reset · Exit** |
+| 1 | `/` | Casa Living storefront: hero, shop-by-room, featured furniture, reviews — no tech pitch |
+| 2 | `/products` | Catalogue — room + category filters, search, sort, grid/list toggle |
+| 3 | `/product/oslo-lounge-chair` | Product page: **Photos / 3D** toggle, variants, **See it in your space**, the product's own QR code |
+| 4 | `/ar/prod-001` | Full-screen, phone-first AR: **Place in Room · Rotate · Move · Scale · Reset** |
 | 5 | `/merchant` | *"Casa Living / Connected Store"* dashboard — 5 synced, 4 AR-ready, 4 QR-ready, product table |
 | 6 | `/merchant/products/prod-001` | Product management: 3D model, AR status, and the AR configuration panel (scale / position / rotation / lighting / environment) |
 | 7 | `/merchant/products/prod-001/qr` | Printable **"SCAN TO SEE IT IN YOUR SPACE"** poster, SVG/PNG export |
@@ -38,6 +38,11 @@ Both `npm run build` and `npm run lint` pass with zero errors and zero warnings.
 
 Use the floating **Customer ⇄ Merchant** pill (bottom-right, hidden on AR pages) to jump between
 the two experiences.
+
+**Where the Rapidify story lives.** The customer side is a furniture store: Casa Living's logo,
+shop-by-room navigation, bag and wishlist, and AR presented as an ordinary shopping feature
+("View in AR"). Rapidify only appears as the small *AR by Rapidify* credit on the product page,
+the AR screen and the footer. The merchant dashboard is where the 3D/AR/QR pipeline is explained.
 
 ### The four demo figures
 
