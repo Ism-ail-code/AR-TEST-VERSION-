@@ -5,6 +5,7 @@ import type { ModelViewerElement } from '@google/model-viewer';
 import type { ARMode } from '@/services/ar';
 import type { ARConfiguration } from '@/types';
 import { Box, RotateCcw } from 'lucide-react';
+import { environmentImage, orbitFor } from '@/services/viewer';
 
 export type ViewerStatus = 'loading' | 'ready' | 'ar-started' | 'ar-ended' | 'error';
 
@@ -19,23 +20,6 @@ export interface ARViewerProps {
   /** Allows the page to call `activateAR()` / reset the camera imperatively. */
   viewerRef?: React.MutableRefObject<ModelViewerElement | null>;
   onStatusChange?: (status: ViewerStatus) => void;
-}
-
-function environmentImage(config?: ARConfiguration | null): string {
-  if (!config) return 'neutral';
-  switch (config.lightingPreset) {
-    case 'studio':
-      return 'studio';
-    case 'dramatic':
-      return 'dawn';
-    default:
-      return config.environmentPreset || 'neutral';
-  }
-}
-
-function orbitFor(config?: ARConfiguration | null): string {
-  const yaw = 45 + (config?.rotation?.y ?? 0);
-  return `${yaw}deg 55deg 105%`;
 }
 
 function arModesAttr(mode: ARMode): string {
@@ -71,6 +55,8 @@ export function ARViewer({
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<ViewerStatus>('loading');
   const [progress, setProgress] = useState(0);
+  /** `load` and the final `progress` land in the same tick — remember which came first. */
+  const loadedRef = useRef(false);
 
   const update = useCallback(
     (next: ViewerStatus) => {
@@ -83,6 +69,7 @@ export function ARViewer({
   const handleRetry = useCallback(() => {
     const el = viewerRef?.current;
     if (!el) return;
+    loadedRef.current = false;
     update('loading');
     setProgress(0);
     el.src = '';
@@ -97,13 +84,20 @@ export function ARViewer({
     const viewer = container.querySelector('model-viewer') as ModelViewerElement | null;
     if (viewerRef) viewerRef.current = viewer;
     if (!viewer) return;
+    loadedRef.current = false;
 
     const onProgress = (e: Event) => {
       const detail = (e as CustomEvent<{ totalProgress?: number }>).detail;
       setProgress(Math.round((detail?.totalProgress ?? 0) * 100));
-      update('loading');
+      // One more `progress` (the environment map) fires just AFTER `load`;
+      // without this guard it would put the viewer back into a loading state
+      // that never resolves.
+      if (!loadedRef.current) update('loading');
     };
-    const onLoad = () => update('ready');
+    const onLoad = () => {
+      loadedRef.current = true;
+      update('ready');
+    };
     const onError = () => update('error');
     const onARStatus = (e: Event) => {
       const detail = (e as CustomEvent<{ status?: string }>).detail;

@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { ModelViewerElement } from '@google/model-viewer';
-import { findProduct, demoProducts, demoStats } from '@/data/products';
+import { findProduct, demoProducts } from '@/data/products';
 import { detectARCapabilities, getPreferredARMode, getARModeLabel } from '@/services/ar';
 import type { ARCapabilities, ARMode } from '@/services/ar';
 import { ARControls, ARUnsupported } from '@/components/ar';
 import type { ViewerStatus } from '@/components/ar/ARViewer';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
-import { ArrowLeft, ArrowRight, Box, ExternalLink, QrCode } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Box, ExternalLink } from 'lucide-react';
 
 const ARViewer = lazy(() =>
   import('@/components/ar/ARViewer').then((m) => ({ default: m.ARViewer })),
@@ -82,9 +82,8 @@ export function ARExperience() {
           </p>
           <h1 className="text-2xl font-bold text-white mb-2">{product.name}</h1>
           <p className="text-white/40 text-sm leading-relaxed mb-6">
-            This product does not have a 3D model yet, so there is nothing to place in your
-            room. {demoStats.arReady} of {demoStats.productsSynced} Casa Living products are
-            AR-ready today.
+            This piece doesn&apos;t have a 3D model yet, so there&apos;s nothing to place in your
+            room.
           </p>
           <div className="flex items-center justify-center gap-2.5">
             <Link
@@ -113,30 +112,32 @@ export function ARExperience() {
     <div className="min-h-screen bg-brand-950 relative overflow-hidden">
       {/* ── Top bar ── */}
       <div className="absolute top-0 left-0 right-0 z-20 p-3 sm:p-4">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleExit}
-            className="flex items-center gap-1.5 bg-brand-900/70 backdrop-blur-md text-white px-3.5 py-2 rounded-xl text-sm font-medium hover:bg-brand-900 transition-colors border border-white/10"
+            className="flex items-center gap-1.5 bg-brand-900/70 backdrop-blur-md text-white px-3.5 py-2 rounded-xl text-sm font-medium hover:bg-brand-900 transition-colors border border-white/10 shrink-0"
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
 
-          <div className="flex items-center gap-2">
-            {capabilities && (
-              <span
-                className={`text-2xs font-semibold px-2.5 py-1 rounded-full border backdrop-blur-md ${
-                  arCapable
-                    ? 'bg-accent-500/20 text-accent-400 border-accent-500/25'
-                    : 'bg-white/10 text-white/50 border-white/10'
-                }`}
-              >
-                {arCapable ? getARModeLabel(arMode) : '3D preview'}
-              </span>
-            )}
-            <span className="hidden sm:flex items-center gap-1.5 bg-brand-900/70 backdrop-blur-md text-white/70 text-2xs font-medium px-2.5 py-1.5 rounded-full border border-white/10">
-              <QrCode className="w-3 h-3" /> Scanned view
-            </span>
+          <div className="flex-1 min-w-0 text-center">
+            <p className="text-white text-sm font-semibold truncate [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">
+              {product.name}
+            </p>
+            <p className="text-white/55 text-[0.625rem] tracking-wide">AR by Rapidify</p>
           </div>
+
+          {capabilities && (
+            <span
+              className={`shrink-0 text-2xs font-semibold px-2.5 py-1.5 rounded-full border backdrop-blur-md ${
+                arCapable
+                  ? 'bg-accent-500/20 text-accent-400 border-accent-500/25'
+                  : 'bg-white/10 text-white/50 border-white/10'
+              }`}
+            >
+              {arCapable ? getARModeLabel(arMode) : '3D preview'}
+            </span>
+          )}
         </div>
       </div>
 

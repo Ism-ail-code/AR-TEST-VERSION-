@@ -3,6 +3,7 @@ import '@google/model-viewer';
 import type { ModelViewerElement } from '@google/model-viewer';
 import { Box, RotateCcw, Maximize2, Minimize2, AlertTriangle, Play, Pause } from 'lucide-react';
 import type { ARConfiguration } from '@/types';
+import { environmentImage, orbitFor } from '@/services/viewer';
 
 export interface ModelViewerProps {
   modelUrl?: string | null;
@@ -11,23 +12,6 @@ export interface ModelViewerProps {
   className?: string;
   /** Show the hover control bar (auto-rotate / reset / fullscreen). */
   controls?: boolean;
-}
-
-function environmentImage(config?: ARConfiguration | null): string {
-  if (!config) return 'neutral';
-  switch (config.lightingPreset) {
-    case 'studio':
-      return 'studio';
-    case 'dramatic':
-      return 'dawn';
-    default:
-      return config.environmentPreset || 'neutral';
-  }
-}
-
-function orbitFor(config?: ARConfiguration | null): string {
-  const yaw = 45 + (config?.rotation?.y ?? 0);
-  return `${yaw}deg 55deg 105%`;
 }
 
 /**
@@ -54,10 +38,13 @@ export function ModelViewer({
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const hasValidModel = !!modelUrl && !modelUrl.includes('placehold.co');
+  /** `load` and the final `progress` land in the same tick — remember which came first. */
+  const loadedRef = useRef(false);
 
   const handleRetry = useCallback(() => {
     const viewer = viewerRef.current;
     if (!viewer || !modelUrl) return;
+    loadedRef.current = false;
     setStatus('loading');
     setProgress(0);
     viewer.src = '';
@@ -93,13 +80,20 @@ export function ModelViewer({
     const viewer = container.querySelector('model-viewer') as ModelViewerElement | null;
     viewerRef.current = viewer;
     if (!viewer) return;
+    loadedRef.current = false;
 
     const onProgress = (e: Event) => {
       const detail = (e as CustomEvent<{ totalProgress?: number }>).detail;
       setProgress(Math.round((detail?.totalProgress ?? 0) * 100));
-      setStatus('loading');
+      // One more `progress` (the environment map) fires just AFTER `load`;
+      // without this guard it would put the viewer back into a loading state
+      // that never resolves.
+      if (!loadedRef.current) setStatus('loading');
     };
-    const onLoad = () => setStatus('ready');
+    const onLoad = () => {
+      loadedRef.current = true;
+      setStatus('ready');
+    };
     const onError = () => setStatus('error');
 
     viewer.addEventListener('progress', onProgress);
@@ -120,10 +114,10 @@ export function ModelViewer({
           <div className="w-14 h-14 rounded-2xl bg-brand-200/60 flex items-center justify-center mb-4">
             <Box className="w-7 h-7 text-brand-400" />
           </div>
-          <p className="text-sm font-semibold text-brand-900">3D model coming soon</p>
+          <p className="text-sm font-semibold text-brand-900">3D view coming soon</p>
           <p className="text-xs text-brand-500 mt-1.5 max-w-[16rem]">
-            A 3D model for the {productName} has not been generated yet. Rapidify adds it when
-            the merchant activates this product.
+            There&apos;s no 3D model for the {productName} yet — the photos on this page show
+            every angle.
           </p>
         </div>
       </div>
