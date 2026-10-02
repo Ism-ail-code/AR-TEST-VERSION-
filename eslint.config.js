@@ -36,7 +36,7 @@ export default tseslint.config(
   },
   {
     // Provider modules export context + hook + component on purpose.
-    files: ['src/components/ui/Toast.tsx'],
+    files: ['src/components/ui/Toast.tsx', 'src/context/ShopContext.tsx'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },
 );

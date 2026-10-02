@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { ToastProvider } from '@/components/ui';
+import { ShopProvider } from '@/context/ShopContext';
+import { ShopDrawer } from '@/components/shop/ShopDrawer';
 import { ExperienceSwitcher } from '@/components/ExperienceSwitcher';
 import { StorefrontLayout } from '@/layouts/StorefrontLayout';
 import { MerchantLayout } from '@/layouts/MerchantLayout';
@@ -62,44 +64,49 @@ export default function App() {
   return (
     <ToastProvider>
       <BrowserRouter>
-        <ScrollToTop />
-        <Suspense fallback={<PageSpinner />}>
-          <Routes>
-            {/* Customer preview takes over the full window — declared before the
-                merchant shell so it doesn't get wrapped in the sidebar layout. */}
-            <Route
-              path="/merchant/products/:productId/preview"
-              element={<CustomerPreview />}
-            />
+        <ShopProvider>
+          <ScrollToTop />
+          <Suspense fallback={<PageSpinner />}>
+            <Routes>
+              {/* Customer preview takes over the full window — declared before the
+                  merchant shell so it doesn't get wrapped in the sidebar layout. */}
+              <Route
+                path="/merchant/products/:productId/preview"
+                element={<CustomerPreview />}
+              />
 
-            {/* Storefront */}
-            <Route element={<StorefrontLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/products" element={<ProductCatalog />} />
-              <Route path="/product/:productId" element={<ProductDetail />} />
-            </Route>
+              {/* Storefront */}
+              <Route element={<StorefrontLayout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/products" element={<ProductCatalog />} />
+                <Route path="/product/:productId" element={<ProductDetail />} />
+              </Route>
 
-            {/* Merchant */}
-            <Route path="/merchant" element={<MerchantLayout />}>
-              <Route index element={<MerchantDashboard />} />
-              <Route path="products" element={<MerchantProducts />} />
-              <Route path="products/:productId" element={<MerchantProductDetail />} />
-              <Route path="products/:productId/qr" element={<QRCodePage />} />
-              <Route path="analytics" element={<MerchantAnalytics />} />
-              <Route path="store" element={<MerchantStore />} />
-              <Route path="settings" element={<MerchantSettings />} />
-            </Route>
+              {/* Merchant */}
+              <Route path="/merchant" element={<MerchantLayout />}>
+                <Route index element={<MerchantDashboard />} />
+                <Route path="products" element={<MerchantProducts />} />
+                <Route path="products/:productId" element={<MerchantProductDetail />} />
+                <Route path="products/:productId/qr" element={<QRCodePage />} />
+                <Route path="analytics" element={<MerchantAnalytics />} />
+                <Route path="store" element={<MerchantStore />} />
+                <Route path="settings" element={<MerchantSettings />} />
+              </Route>
 
-            {/* AR (full screen) */}
-            <Route path="/ar/:productId" element={<ARExperience />} />
+              {/* AR (full screen) */}
+              <Route path="/ar/:productId" element={<ARExperience />} />
 
-            {/* 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+              {/* 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
 
-        {/* Experience switcher — visible on all pages except AR */}
-        <ExperienceSwitcher />
+          {/* Bag / wishlist drawer */}
+          <ShopDrawer />
+
+          {/* Experience switcher — visible on all pages except AR */}
+          <ExperienceSwitcher />
+        </ShopProvider>
       </BrowserRouter>
     </ToastProvider>
   );
