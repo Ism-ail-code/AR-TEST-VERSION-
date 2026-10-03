@@ -23,6 +23,50 @@ Both `npm run build` and `npm run lint` pass with zero errors and zero warnings.
 
 ---
 
+## Seeing it on a phone
+
+`npm run dev` binds to `localhost`, so a phone can't reach it. Two options:
+
+### A. Same-Wi-Fi preview (instant)
+
+```bash
+npm run dev -- --host --port 5180
+```
+
+Vite prints a `Network:` line — open that address on a phone on the same Wi-Fi, e.g.
+`http://192.168.100.63:5180`. Windows Firewall already has inbound `Allow` rules for `node.exe`;
+if the page doesn't load, re-check them on the **Private** profile too.
+
+`getBaseUrl()` falls back to `window.location.origin`, so the PDP and poster QR codes encode
+that LAN address automatically and scan correctly while the dev server is up.
+
+Limits: the PC must stay awake on the same network, and the QR codes point at a private IP.
+**WebXR is secure-context-only and will not run over plain `http://`** — iOS Quick Look still
+works (the GLB→USDZ conversion happens in-page), and Android Scene Viewer may refuse a plain-http
+model URL.
+
+### B. Vercel (permanent, full AR)
+
+The build is a static SPA, so any HTTPS host works. `vercel.json` ships the SPA fallback that
+`BrowserRouter` needs — without it a deep link like `/ar/refrigerator` would 404 on reload.
+
+**Via GitHub (recommended):** push the repo, then in the Vercel dashboard click *Add New →
+Project* and import it. Vercel auto-detects Vite, runs `npm run build` and serves `dist/`.
+
+**Via CLI:**
+
+```bash
+npx vercel login
+npx vercel          # preview URL
+npx vercel --prod   # production URL
+```
+
+No `VITE_BASE_URL` is needed on Vercel: `getBaseUrl()` resolves to the page's own origin, so QR
+codes encode the deployed `https://…vercel.app` address on their own. Set it only if you ever
+build once and host the output somewhere else.
+
+---
+
 ## Demo walkthrough
 
 | # | Where | What to look at |
