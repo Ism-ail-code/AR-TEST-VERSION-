@@ -61,6 +61,11 @@ export function MerchantDashboard() {
 
   const maxViews = Math.max(...rows.map((r) => r.stats.productViews), 1);
 
+  /** The dashboard shows a slice — the catalogue page carries the full list. */
+  const byViews = [...rows].sort((a, b) => b.stats.productViews - a.stats.productViews);
+  const tableRows = byViews.slice(0, 10);
+  const engagementRows = byViews.slice(0, 8);
+
   return (
     <div className="max-w-6xl">
       {/* ─── Connected Store header ─── */}
@@ -166,7 +171,8 @@ export function MerchantDashboard() {
           <div>
             <h2 className="text-sm font-semibold text-brand-900">Product management</h2>
             <p className="text-2xs text-brand-400 mt-0.5">
-              {demoStats.arReady} of {demoStats.productsSynced} products activated
+              Top {tableRows.length} by views · {demoStats.arReady} of {demoStats.productsSynced}{' '}
+              products activated
             </p>
           </div>
           <Link
@@ -194,7 +200,7 @@ export function MerchantDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-200/40">
-              {rows.map(({ product }) => (
+              {tableRows.map(({ product }) => (
                 <tr key={product.id} className="hover:bg-surface-50 transition-colors">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
@@ -259,7 +265,7 @@ export function MerchantDashboard() {
             <span className="text-2xs text-brand-400">Static demo dataset</span>
           </div>
           <div className="space-y-4">
-            {rows.map(({ product, stats }) => (
+            {engagementRows.map(({ product, stats }) => (
               <div key={product.id} className="flex items-center gap-3">
                 <img
                   src={product.images[0]?.url}
@@ -340,7 +346,7 @@ export function MerchantDashboard() {
           {[
             {
               title: 'Activate Forma Coffee Table',
-              desc: 'Generate a 3D model to bring AR ready to 5 of 5.',
+              desc: `Generate a 3D model to bring AR ready to ${demoStats.productsSynced} of ${demoStats.productsSynced}.`,
               href: `/merchant/products/prod-003`,
               cta: 'Open product',
             },

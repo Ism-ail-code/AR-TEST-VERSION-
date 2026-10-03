@@ -159,7 +159,7 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
                   alt={product.images[selectedImage]?.alt ?? product.name}
                   className="w-full h-full object-cover"
                 />
-                {product.arReady && (
+                {product.arReady ? (
                   <Link
                     to={`/ar/${product.id}`}
                     aria-label={`View ${product.name} in AR`}
@@ -168,6 +168,10 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
                     <Eye className="w-4 h-4 text-accent-600 transition-colors group-hover/ar:text-white" />
                     View in AR
                   </Link>
+                ) : (
+                  <span className="absolute bottom-4 right-4 z-10 inline-flex items-center gap-2 bg-brand-800/70 text-white/80 text-xs font-medium px-3.5 py-2.5 rounded-full backdrop-blur-sm">
+                    <Box className="w-3.5 h-3.5" /> 3D coming soon
+                  </span>
                 )}
               </div>
             ) : (
@@ -481,11 +485,20 @@ export function ProductDetail({ productSlug }: { productSlug?: string } = {}) {
               View this {noun} in your space
             </h2>
             <p className="text-sm text-brand-500 mt-2 leading-relaxed max-w-lg">
-              Scan with your phone camera. This page opens on your phone and the{' '}
-              <Link to={`/ar/${product.id}`} className="text-accent-600 hover:text-accent-700">
-                {product.name}
-              </Link>{' '}
-              drops straight into your room.
+              {product.arReady ? (
+                <>
+                  Scan with your phone camera. This page opens on your phone and the{' '}
+                  <Link to={`/ar/${product.id}`} className="text-accent-600 hover:text-accent-700">
+                    {product.name}
+                  </Link>{' '}
+                  drops straight into your room.
+                </>
+              ) : (
+                <>
+                  Every product has its own code — no two share one. Scan it with your phone
+                  camera to open this page on the spot.
+                </>
+              )}
             </p>
 
             <div className="mt-4 flex items-center gap-2 bg-surface-100 border border-brand-200/60 rounded-xl px-3 py-2.5 max-w-md">

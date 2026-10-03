@@ -8,10 +8,11 @@ import { useShop } from '@/context/ShopContext';
 const NAV_ITEMS = [
   { label: 'Home', to: '/' },
   { label: 'Shop', to: '/products' },
-  { label: 'Living Room', to: '/products?room=Living%20Room', room: 'Living Room' },
-  { label: 'Bedroom', to: '/products?room=Bedroom', room: 'Bedroom' },
-  { label: 'Dining', to: '/products?room=Dining', room: 'Dining' },
-  { label: 'Lighting', to: '/products?category=Lighting', category: 'Lighting' },
+  { label: 'Electronics', to: '/products?dept=Electronics', dept: 'Electronics' },
+  { label: 'Appliances', to: '/products?dept=Appliances', dept: 'Appliances' },
+  { label: 'Kitchen', to: '/products?dept=Kitchen', dept: 'Kitchen' },
+  { label: 'Audio', to: '/products?dept=Audio', dept: 'Audio' },
+  { label: 'Smart Home', to: '/products?dept=Smart%20Home', dept: 'Smart Home' },
 ] as const;
 
 export function Navbar() {
@@ -27,10 +28,14 @@ export function Navbar() {
 
   const isActive = (item: (typeof NAV_ITEMS)[number]) => {
     if (!onCatalog) return location.pathname === '/' && item.to === '/';
-    if ('room' in item && item.room) return searchParams.get('room') === item.room;
-    if ('category' in item && item.category) return searchParams.get('category') === item.category;
+    if ('dept' in item && item.dept) return searchParams.get('dept') === item.dept;
     if (item.to === '/products')
-      return !searchParams.get('room') && !searchParams.get('category');
+      return (
+        !searchParams.get('room') &&
+        !searchParams.get('category') &&
+        !searchParams.get('dept') &&
+        !searchParams.get('search')
+      );
     return false;
   };
 
@@ -64,7 +69,7 @@ export function Navbar() {
                 CASA LIVING
               </span>
               <span className="hidden sm:block text-2xs text-brand-400 uppercase tracking-[0.28em] mt-1.5">
-                Furniture &amp; Design
+                Home &middot; Tech &middot; Design
               </span>
             </Link>
 
@@ -154,7 +159,7 @@ export function Navbar() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-400" />
               <input
                 type="text"
-                placeholder="Search chairs, sofas, lighting..."
+                placeholder="Search sofas, fridges, TVs, headphones..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus

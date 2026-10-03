@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Mail, Phone, ArrowUpRight } from 'lucide-react';
-import { demoStore } from '@/data/products';
+import { demoStore, departments } from '@/data/products';
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -8,7 +8,7 @@ export function Footer() {
   return (
     <footer className="bg-brand-900 text-brand-300">
       <div className="container-page py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
@@ -28,14 +28,34 @@ export function Footer() {
             </Link>
           </div>
 
-          {/* Quick Links */}
+          {/* Departments */}
           <div>
             <h4 className="text-xs font-semibold text-brand-500 uppercase tracking-wider mb-4">Shop</h4>
             <ul className="space-y-2.5">
-              <li><Link to="/products" className="text-sm text-brand-400 hover:text-white transition-colors">All furniture</Link></li>
+              <li><Link to="/products" className="text-sm text-brand-400 hover:text-white transition-colors">All products</Link></li>
+              {departments.map((dept) => (
+                <li key={dept.key}>
+                  <Link
+                    to={`/products?dept=${encodeURIComponent(dept.key)}`}
+                    className="text-sm text-brand-400 hover:text-white transition-colors"
+                  >
+                    {dept.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Furniture rooms & categories */}
+          <div>
+            <h4 className="text-xs font-semibold text-brand-500 uppercase tracking-wider mb-4">Furniture</h4>
+            <ul className="space-y-2.5">
+              <li><Link to="/products?dept=Home" className="text-sm text-brand-400 hover:text-white transition-colors">All furniture</Link></li>
               <li><Link to="/products?room=Living%20Room" className="text-sm text-brand-400 hover:text-white transition-colors">Living Room</Link></li>
               <li><Link to="/products?room=Bedroom" className="text-sm text-brand-400 hover:text-white transition-colors">Bedroom</Link></li>
               <li><Link to="/products?room=Dining" className="text-sm text-brand-400 hover:text-white transition-colors">Dining</Link></li>
+              <li><Link to="/products?category=Seating" className="text-sm text-brand-400 hover:text-white transition-colors">Seating</Link></li>
+              <li><Link to="/products?category=Tables" className="text-sm text-brand-400 hover:text-white transition-colors">Tables</Link></li>
               <li><Link to="/products?category=Lighting" className="text-sm text-brand-400 hover:text-white transition-colors">Lighting</Link></li>
             </ul>
           </div>

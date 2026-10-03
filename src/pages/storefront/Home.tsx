@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { demoProducts, getReviewsForProduct } from '@/data/products';
+import { demoProducts, departments, getReviewsForProduct } from '@/data/products';
 import { ProductCard, useToast } from '@/components/ui';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import {
@@ -12,21 +12,53 @@ import {
   Shield,
   MapPin,
   Armchair,
-  BedDouble,
-  UtensilsCrossed,
-  Lamp,
+  Tv,
+  Refrigerator,
+  CookingPot,
+  Speaker,
+  Wifi,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-const ROOMS = [
-  { name: 'Living Room', to: '/products?room=Living%20Room', image: '/images/haven-velvet-sofa-2.jpg', icon: Armchair },
-  { name: 'Bedroom', to: '/products?room=Bedroom', image: '/images/oslo-lounge-chair-1.jpg', icon: BedDouble },
-  { name: 'Dining', to: '/products?room=Dining', image: '/images/forma-coffee-table-1.jpg', icon: UtensilsCrossed },
-  { name: 'Lighting', to: '/products?category=Lighting', image: '/images/luma-globe-lamp-1.jpg', icon: Lamp },
+const DEPT_ICONS: Record<string, LucideIcon> = {
+  Home: Armchair,
+  Electronics: Tv,
+  Appliances: Refrigerator,
+  Kitchen: CookingPot,
+  Audio: Speaker,
+  'Smart Home': Wifi,
+};
+
+/** Furniture rooms and categories — secondary entry points under the departments. */
+const ROOM_LINKS = [
+  { label: 'Living Room', to: '/products?room=Living%20Room' },
+  { label: 'Bedroom', to: '/products?room=Bedroom' },
+  { label: 'Dining', to: '/products?room=Dining' },
+  { label: 'Seating', to: '/products?category=Seating' },
+  { label: 'Tables', to: '/products?category=Tables' },
+  { label: 'Lighting', to: '/products?category=Lighting' },
 ];
 
-const HERO_SOFA = demoProducts.find((p) => p.id === 'prod-002')!;
+const HERO_PRODUCT = demoProducts.find((p) => p.id === 'prod-002')!;
 
-const QUOTES = ['prod-001', 'prod-002', 'prod-005'].map((id) => ({
+/** A curated cross-section of the catalogue — furniture, appliances and electronics. */
+const FEATURED_IDS = [
+  'prod-002',
+  'prod-006',
+  'prod-014',
+  'prod-001',
+  'prod-018',
+  'prod-012',
+  'prod-020',
+  'prod-004',
+  'prod-021',
+];
+
+const featured = FEATURED_IDS.map((id) => demoProducts.find((p) => p.id === id)).filter(
+  (p): p is (typeof demoProducts)[number] => Boolean(p),
+);
+
+const QUOTES = ['prod-001', 'prod-014', 'prod-018'].map((id) => ({
   review: getReviewsForProduct(id)[0],
   product: demoProducts.find((p) => p.id === id)!,
 }));
@@ -35,8 +67,6 @@ export function Home() {
   useDocumentTitle();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
-
-  const featured = demoProducts;
 
   return (
     <div>
@@ -50,12 +80,12 @@ export function Home() {
               </span>
 
               <h1 className="mt-5 text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white tracking-tight leading-[1.05]">
-                Furniture made for your space.
+                Furniture, appliances and tech for modern living.
               </h1>
 
               <p className="mt-5 text-base sm:text-lg text-brand-300 leading-relaxed max-w-md">
-                Thoughtfully designed pieces for modern living — built in small batches from
-                materials chosen to last.
+                Everything for the modern home — from the sofa to the smart TV — chosen to last
+                and previewable in your own room before you buy.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -66,10 +96,10 @@ export function Home() {
                   Shop Collection <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
-                  to="/products?room=Living%20Room"
+                  to="/products?dept=Appliances"
                   className="h-12 px-7 border border-white/25 text-white rounded-xl text-sm font-semibold hover:bg-white/10 transition-colors inline-flex items-center"
                 >
-                  Living Room
+                  Shop appliances
                 </Link>
               </div>
 
@@ -89,7 +119,7 @@ export function Home() {
               <div className="absolute inset-0 bg-gradient-to-t from-brand-950/60 via-transparent to-transparent lg:bg-gradient-to-r lg:from-brand-900 lg:via-brand-900/10 lg:to-transparent" />
 
               <Link
-                to={`/ar/${HERO_SOFA.id}`}
+                to={`/ar/${HERO_PRODUCT.id}`}
                 className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 inline-flex items-center gap-2 bg-white/95 backdrop-blur text-brand-900 text-xs font-semibold pl-3 pr-4 py-2.5 rounded-full shadow-lg hover:bg-white transition-colors"
               >
                 <Eye className="w-4 h-4 text-accent-600" /> View in AR
@@ -99,52 +129,74 @@ export function Home() {
         </div>
       </section>
 
-      {/* ───────────────── Shop by room ───────────────── */}
+      {/* ───────────────── Shop by department ───────────────── */}
       <section className="container-page pb-16 sm:pb-20">
         <div className="flex items-end justify-between mb-6">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-brand-900 tracking-tight">
-              Shop by room
+              Shop by department
             </h2>
             <p className="text-sm text-brand-500 mt-1.5">
-              Start with the space you&apos;re furnishing.
+              Six departments, one catalogue — every product is AR-ready.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {ROOMS.map((room) => (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          {departments.map((dept) => {
+            const Icon = DEPT_ICONS[dept.key] ?? Armchair;
+            return (
+              <Link
+                key={dept.key}
+                to={`/products?dept=${encodeURIComponent(dept.key)}`}
+                className="group relative rounded-2xl overflow-hidden bg-brand-100 aspect-[4/5] sm:aspect-[4/3]"
+              >
+                <img
+                  src={dept.image}
+                  alt={dept.label}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-950/80 via-brand-950/20 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm sm:text-base font-semibold text-white">
+                      {dept.label}
+                    </span>
+                    <Icon className="w-4 h-4 text-white/70 shrink-0" />
+                  </div>
+                  <p className="text-2xs text-white/70 mt-1">{dept.blurb}</p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Furniture rooms and categories */}
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <span className="text-2xs uppercase tracking-wider text-brand-400 mr-1">Also in furniture</span>
+          {ROOM_LINKS.map((link) => (
             <Link
-              key={room.name}
-              to={room.to}
-              className="group relative rounded-2xl overflow-hidden bg-brand-100 aspect-[4/5] sm:aspect-[4/3] lg:aspect-[3/4]"
+              key={link.label}
+              to={link.to}
+              className="px-3.5 py-1.5 rounded-full bg-white border border-brand-200/60 text-xs font-medium text-brand-600 hover:border-accent-300 hover:text-accent-700 transition-colors"
             >
-              <img
-                src={room.image}
-                alt={room.name}
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-950/75 via-brand-950/10 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 flex items-center justify-between">
-                <span className="text-sm sm:text-base font-semibold text-white">{room.name}</span>
-                <room.icon className="w-4 h-4 text-white/70" />
-              </div>
+              {link.label}
             </Link>
           ))}
         </div>
       </section>
 
-      {/* ───────────────── Featured furniture ───────────────── */}
+      {/* ───────────────── Featured ───────────────── */}
       <section className="bg-white border-y border-brand-200/60">
         <div className="container-page py-16 sm:py-20">
           <div className="flex items-end justify-between mb-8 gap-4">
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold text-brand-900 tracking-tight">
-                Featured furniture
+                Featured this season
               </h2>
               <p className="text-sm text-brand-500 mt-1.5">
-                {featured.length} pieces, ready to ship.
+                {featured.length} products, ready to ship.
               </p>
             </div>
             <Link
@@ -169,8 +221,8 @@ export function Home() {
         <div className="rounded-3xl bg-surface-100 overflow-hidden grid md:grid-cols-2">
           <div className="relative min-h-[260px] md:min-h-[420px]">
             <img
-              src="/images/oslo-lounge-chair-1.jpg"
-              alt="Oslo lounge chair in rust velvet"
+              src="/images/refrigerator-1.jpg"
+              alt="Aurora French-Door Refrigerator in brushed steel"
               className="absolute inset-0 w-full h-full object-cover"
               loading="lazy"
             />
@@ -185,14 +237,14 @@ export function Home() {
               See it in your space
             </h2>
             <p className="mt-3 text-brand-600 leading-relaxed max-w-md">
-              Open any piece on your phone and place it in your own room at true scale. Check the
-              height, the colour and the fit — then order with the confidence of having already
-              seen it there.
+              Open any product on your phone and place it in your own room at true scale. Check
+              the clearance around a fridge, the depth of a sofa on a shelf or how a TV fills the
+              wall — then order with the confidence of having already seen it there.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
-                to="/ar/prod-001"
+                to="/ar/prod-006"
                 className="h-11 px-5 bg-accent-500 text-white rounded-xl text-sm font-semibold hover:bg-accent-600 transition-colors inline-flex items-center gap-2 shadow-sm shadow-accent-500/25"
               >
                 <Eye className="w-4 h-4" /> View in AR
@@ -201,7 +253,7 @@ export function Home() {
                 to="/products"
                 className="h-11 px-5 bg-white border border-brand-200 text-brand-800 rounded-xl text-sm font-semibold hover:border-brand-400 transition-colors inline-flex items-center"
               >
-                Shop furniture
+                Shop all products
               </Link>
             </div>
 
@@ -262,7 +314,7 @@ export function Home() {
           {[
             { icon: Truck, title: 'Free shipping', body: 'On every order over $500' },
             { icon: RotateCcw, title: '30-day returns', body: 'Free collection, no questions' },
-            { icon: Shield, title: '2-year warranty', body: 'On frames, joints and finishes' },
+            { icon: Shield, title: '2-year warranty', body: 'On furniture, appliances and tech' },
             { icon: MapPin, title: 'Austin showroom', body: '247 Design District Blvd' },
           ].map((item) => (
             <div key={item.title} className="rounded-2xl border border-brand-200/60 p-5">
@@ -281,7 +333,7 @@ export function Home() {
             10% off your first order
           </h2>
           <p className="text-sm text-brand-400 mt-2.5 max-w-md mx-auto">
-            New pieces, restocks and the occasional lookbook. No noise.
+            New arrivals, restocks and the occasional lookbook. No noise.
           </p>
 
           <form

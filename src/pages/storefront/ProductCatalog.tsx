@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { demoProducts } from '@/data/products';
+import { demoProducts, departments, departmentKeys, rooms as roomNames } from '@/data/products';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -11,6 +11,7 @@ export function ProductCatalog() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [search, setSearch] = useState(searchParams.get('search') || '');
+  const [selectedDept, setSelectedDept] = useState(searchParams.get('dept') || 'All');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All');
   const [selectedRoom, setSelectedRoom] = useState(searchParams.get('room') || 'All');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating'>('featured');
@@ -18,16 +19,20 @@ export function ProductCatalog() {
 
   // Sync URL params on mount / navigation
   useEffect(() => {
-    const cat = searchParams.get('category');
-    const room = searchParams.get('room');
+    setSelectedDept(searchParams.get('dept') ?? 'All');
+    setSelectedCategory(searchParams.get('category') ?? 'All');
+    setSelectedRoom(searchParams.get('room') ?? 'All');
     const q = searchParams.get('search');
-    setSelectedCategory(cat ?? 'All');
-    setSelectedRoom(room ?? 'All');
     if (q) setSearch(q);
   }, [searchParams]);
 
   const allCategories = ['All', ...new Set(demoProducts.map((p) => p.category))];
-  const allRooms = ['All', ...new Set(demoProducts.flatMap((p) => p.rooms))];
+  const allRooms = [
+    'All',
+    ...roomNames.filter(
+      (r) => !departmentKeys.includes(r) && demoProducts.some((p) => p.rooms.includes(r)),
+    ),
+  ];
 
   let filtered = demoProducts.filter((product) => {
     const q = search.toLowerCase();
@@ -38,47 +43,60 @@ export function ProductCatalog() {
       product.material.toLowerCase().includes(q) ||
       product.category.toLowerCase().includes(q) ||
       product.tags.some((t) => t.toLowerCase().includes(q));
+    const matchesDept = selectedDept === 'All' || product.rooms.includes(selectedDept);
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
     const matchesRoom = selectedRoom === 'All' || product.rooms.includes(selectedRoom);
-    return matchesSearch && matchesCategory && matchesRoom;
+    return matchesSearch && matchesDept && matchesCategory && matchesRoom;
   });
 
   if (sortBy === 'price-asc') filtered = [...filtered].sort((a, b) => a.price - b.price);
   if (sortBy === 'price-desc') filtered = [...filtered].sort((a, b) => b.price - a.price);
   if (sortBy === 'rating') filtered = [...filtered].sort((a, b) => b.rating - a.rating);
 
+  /** Writes one filter into the URL — the single source of truth for the view. */
+  const setFilter = (key: 'dept' | 'category' | 'room', value: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (value === 'All') params.delete(key);
+    else params.set(key, value);
+    setSearchParams(params, { replace: true });
+  };
+
+  const handleDeptChange = (dept: string) => {
+    setSelectedDept(dept);
+    setFilter('dept', dept);
+  };
+
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
-    const params = new URLSearchParams(searchParams);
-    if (cat === 'All') {
-      params.delete('category');
-    } else {
-      params.set('category', cat);
-    }
-    setSearchParams(params, { replace: true });
+    setFilter('category', cat);
   };
 
   const handleRoomChange = (room: string) => {
     setSelectedRoom(room);
-    const params = new URLSearchParams(searchParams);
-    if (room === 'All') {
-      params.delete('room');
-    } else {
-      params.set('room', room);
-    }
-    setSearchParams(params, { replace: true });
+    setFilter('room', room);
   };
 
   const clearFilters = () => {
     setSearch('');
+    setSelectedDept('All');
     setSelectedCategory('All');
     setSelectedRoom('All');
     setSearchParams(new URLSearchParams(), { replace: true });
   };
 
   const heading =
-    selectedRoom !== 'All' ? selectedRoom : selectedCategory !== 'All' ? selectedCategory : 'Shop';
-  const hasFilters = Boolean(search) || selectedCategory !== 'All' || selectedRoom !== 'All';
+    selectedDept !== 'All'
+      ? departments.find((d) => d.key === selectedDept)?.label ?? selectedDept
+      : selectedRoom !== 'All'
+        ? selectedRoom
+        : selectedCategory !== 'All'
+          ? selectedCategory
+          : 'Shop';
+  const hasFilters =
+    Boolean(search) ||
+    selectedDept !== 'All' ||
+    selectedCategory !== 'All' ||
+    selectedRoom !== 'All';
 
   return (
     <div className="container-page py-8 sm:py-10 lg:py-12">
@@ -96,8 +114,8 @@ export function ProductCatalog() {
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold text-brand-900 tracking-tight">{heading}</h1>
           <p className="text-sm text-brand-500 mt-1.5">
-            {filtered.length} {filtered.length === 1 ? 'piece' : 'pieces'} &middot; free shipping
-            over $500
+            {filtered.length} {filtered.length === 1 ? 'product' : 'products'} &middot; free
+            shipping over $500
           </p>
         </div>
       </div>
@@ -158,6 +176,26 @@ export function ProductCatalog() {
         </div>
       </div>
 
+      {/* Store departments */}
+      <div className="flex gap-2 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
+        {['All', ...departments.map((d) => d.label)].map((label) => {
+          const key = label === 'All' ? 'All' : departments.find((d) => d.label === label)!.key;
+          return (
+            <button
+              key={label}
+              onClick={() => handleDeptChange(key)}
+              className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                selectedDept === key
+                  ? 'bg-accent-500 text-white shadow-sm'
+                  : 'bg-white border border-brand-200/60 text-brand-600 hover:border-accent-300 hover:text-accent-700'
+              }`}
+            >
+              {label === 'All' ? 'All departments' : label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Room departments */}
       <div className="flex gap-2 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
         {allRooms.map((room) => (
@@ -187,7 +225,7 @@ export function ProductCatalog() {
                 : 'bg-white border border-brand-200/60 text-brand-600 hover:border-brand-400 hover:text-brand-900'
             }`}
           >
-            {cat === 'All' ? 'All furniture' : cat}
+            {cat === 'All' ? 'All products' : cat}
           </button>
         ))}
       </div>
@@ -200,6 +238,12 @@ export function ProductCatalog() {
             <span className="inline-flex items-center gap-1.5 bg-accent-50 text-accent-700 px-2.5 py-1 rounded-lg font-medium">
               &ldquo;{search}&rdquo;
               <button onClick={() => setSearch('')} className="hover:text-accent-900"><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {selectedDept !== 'All' && (
+            <span className="inline-flex items-center gap-1.5 bg-accent-50 text-accent-700 px-2.5 py-1 rounded-lg font-medium">
+              {departments.find((d) => d.key === selectedDept)?.label ?? selectedDept}
+              <button onClick={() => handleDeptChange('All')} className="hover:text-accent-900"><X className="w-3 h-3" /></button>
             </span>
           )}
           {selectedRoom !== 'All' && (
