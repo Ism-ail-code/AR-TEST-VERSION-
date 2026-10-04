@@ -7,7 +7,15 @@ import type { ARConfiguration } from '@/types';
 import { Box, RotateCcw } from 'lucide-react';
 import { environmentImage, orbitFor } from '@/services/viewer';
 
-export type ViewerStatus = 'loading' | 'ready' | 'ar-started' | 'ar-ended' | 'error';
+export type ViewerStatus =
+  | 'loading'
+  | 'ready'
+  | 'ar-started'
+  | 'ar-ended'
+  /** The model is on screen, but the camera AR hand-off was refused. */
+  | 'ar-unavailable'
+  /** The model itself never loaded — there is genuinely nothing to show. */
+  | 'error';
 
 export interface ARViewerProps {
   modelUrl: string;
@@ -55,8 +63,16 @@ export function ARViewer({
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<ViewerStatus>('loading');
   const [progress, setProgress] = useState(0);
+  const [errorDetail, setErrorDetail] = useState('');
   /** `load` and the final `progress` land in the same tick — remember which came first. */
   const loadedRef = useRef(false);
+  /**
+   * A refused AR hand-off is not a model failure. Keeping it separate stops
+   * the page from covering a perfectly rendered model with a
+   * "Could not load the 3D model" screen — which is exactly what Android
+   * Chrome used to see when WebXR was claimed but couldn't start.
+   */
+  const arFailedRef = useRef(false);
 
   const update = useCallback(
     (next: ViewerStatus) => {
@@ -70,6 +86,8 @@ export function ARViewer({
     const el = viewerRef?.current;
     if (!el) return;
     loadedRef.current = false;
+    arFailedRef.current = false;
+    setErrorDetail('');
     update('loading');
     setProgress(0);
     el.src = '';
@@ -96,15 +114,23 @@ export function ARViewer({
     };
     const onLoad = () => {
       loadedRef.current = true;
-      update('ready');
+      update(arFailedRef.current ? 'ar-unavailable' : 'ready');
     };
-    const onError = () => update('error');
+    const onError = (e: Event) => {
+      // A stray `error` after a successful load must never hide a model
+      // that is already on screen.
+      if (viewer.loaded) return;
+      const detail = (e as CustomEvent<{ message?: string }>).detail;
+      setErrorDetail(typeof detail?.message === 'string' ? detail.message : '');
+      update('error');
+    };
     const onARStatus = (e: Event) => {
       const detail = (e as CustomEvent<{ status?: string }>).detail;
       switch (detail?.status) {
         case 'session-started':
         case 'object-unplaced':
         case 'object-placed':
+          arFailedRef.current = false;
           update('ar-started');
           break;
         case 'session-ended':
@@ -112,7 +138,9 @@ export function ARViewer({
           break;
         case 'failed':
         case 'not-supporting-browser':
-          update('error');
+          // AR could not start — the model is fine, so keep it visible.
+          arFailedRef.current = true;
+          update(loadedRef.current ? 'ar-unavailable' : 'loading');
           break;
       }
     };
@@ -175,10 +203,17 @@ export function ARViewer({
             <Box className="w-7 h-7 text-white/40" />
           </div>
           <p className="text-white text-sm font-semibold mb-1.5">Could not load the 3D model</p>
-          <p className="text-white/45 text-xs max-w-xs leading-relaxed mb-5">
-            The model file did not load — product photos are still available on the product
-            page.
-          </p>
+          <div className="mb-5">
+            <p className="text-white/45 text-xs max-w-xs leading-relaxed">
+              The model file did not load — product photos are still available on the product
+              page.
+            </p>
+            {errorDetail && (
+              <p className="text-white/25 text-2xs max-w-sm mt-2 break-words leading-relaxed">
+                {errorDetail}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2.5">
             <Link
               to={productSlug ? `/product/${productSlug}` : '/products'}

@@ -34,6 +34,7 @@ export function ModelViewer({
 
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [progress, setProgress] = useState(0);
+  const [errorDetail, setErrorDetail] = useState('');
   const [autoRotate, setAutoRotate] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -45,6 +46,7 @@ export function ModelViewer({
     const viewer = viewerRef.current;
     if (!viewer || !modelUrl) return;
     loadedRef.current = false;
+    setErrorDetail('');
     setStatus('loading');
     setProgress(0);
     viewer.src = '';
@@ -94,7 +96,14 @@ export function ModelViewer({
       loadedRef.current = true;
       setStatus('ready');
     };
-    const onError = () => setStatus('error');
+    const onError = (e: Event) => {
+      // A stray `error` after a successful load must never hide a model that
+      // is already on screen (Chrome emits these for late/failed sub-resources).
+      if (viewer.loaded) return;
+      const detail = (e as CustomEvent<{ message?: string }>).detail;
+      setErrorDetail(typeof detail?.message === 'string' ? detail.message : '');
+      setStatus('error');
+    };
 
     viewer.addEventListener('progress', onProgress);
     viewer.addEventListener('load', onLoad);
@@ -167,6 +176,11 @@ export function ModelViewer({
           <p className="text-xs text-brand-500 mt-1.5 max-w-xs">
             Check your connection and try again — the product photos are still available.
           </p>
+          {errorDetail && (
+            <p className="text-2xs text-brand-400 mt-2 max-w-sm break-words leading-relaxed">
+              {errorDetail}
+            </p>
+          )}
           <button
             onClick={handleRetry}
             className="mt-4 h-9 px-4 bg-brand-900 text-white rounded-lg text-xs font-medium hover:bg-brand-800 transition-colors"

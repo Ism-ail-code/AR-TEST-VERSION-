@@ -23,13 +23,35 @@ function isMobile(): boolean {
   return isIOS() || isAndroid() || /Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(USER_AGENT);
 }
 
-function isWebXRSupported(): boolean {
-  if (!('xr' in navigator)) return false;
+/**
+ * `XRSystem.isSessionSupported()` is **async**.
+ *
+ * It used to be called without awaiting, so the raw `Promise` was returned —
+ * and a Promise is always truthy. Every browser that merely *exposed*
+ * `navigator.xr` was therefore reported as WebXR-capable, which pinned
+ * `ar-modes="webxr"` on devices that can never start an `immersive-ar`
+ * session. Android Chrome (which does expose `navigator.xr`) then failed the
+ * hand-off and reported `ar-status: failed`, while Samsung Internet — which
+ * does not go down that path — happily showed the model.
+ *
+ * Bounded by a timeout: some browsers only settle the promise after a user
+ * gesture, and the AR page must never hang on "Detecting AR capabilities…".
+ */
+function isWebXRSupported(): Promise<boolean> {
+  if (typeof navigator === 'undefined' || !('xr' in navigator)) return Promise.resolve(false);
+
+  let check: unknown;
   try {
-    return (navigator as any).xr?.isSessionSupported?.('immersive-ar') ?? false;
+    check = (navigator as Navigator & { xr?: { isSessionSupported?: (m: string) => Promise<boolean> } })
+      .xr?.isSessionSupported?.('immersive-ar');
   } catch {
-    return false;
+    return Promise.resolve(false);
   }
+  if (!check || typeof (check as Promise<boolean>).then !== 'function') return Promise.resolve(false);
+
+  const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1500));
+  const settled = (check as Promise<boolean>).then((v) => v === true).catch(() => false);
+  return Promise.race([settled, timeout]);
 }
 
 function isSceneViewerSupported(): boolean {
@@ -45,8 +67,15 @@ function isQuickLookSupported(): boolean {
   return 'relList' in link && link.relList.supports?.('ar') === true;
 }
 
-export function detectARCapabilities(): ARCapabilities {
-  const webXR = isWebXRSupported();
+/**
+ * Detects what this device can actually do.
+ *
+ * Async because WebXR support is only knowable from a promise — see
+ * `isWebXRSupported()` above. Never rejects, so the AR page can always
+ * settle out of its "detecting" state.
+ */
+export async function detectARCapabilities(): Promise<ARCapabilities> {
+  const webXR = await isWebXRSupported();
   const sceneViewer = isSceneViewerSupported();
   const quickLook = isQuickLookSupported();
   const iOS = isIOS();

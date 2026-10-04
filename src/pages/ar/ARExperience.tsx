@@ -33,9 +33,16 @@ export function ARExperience() {
   useDocumentTitle(product ? `AR · ${product.name}` : 'AR');
 
   useEffect(() => {
-    const caps = detectARCapabilities();
-    setCapabilities(caps);
-    setArMode(getPreferredARMode(caps));
+    // WebXR support can only be known from a promise — see `isWebXRSupported()`.
+    let alive = true;
+    detectARCapabilities().then((caps) => {
+      if (!alive) return;
+      setCapabilities(caps);
+      setArMode(getPreferredARMode(caps));
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const handleExit = useCallback(() => {
@@ -105,6 +112,19 @@ export function ARExperience() {
   }
 
   const arCapable = capabilities?.arCapable ?? false;
+  /**
+   * AR is only *offered* while it is actually working. When the browser
+   * refuses the hand-off the model is already on screen, so we downgrade the
+   * controls to 3D mode rather than throwing a full-screen error over it.
+   */
+  const arActive = arCapable && status !== 'ar-unavailable';
+  /**
+   * The explainer sheet is for phones that were expected to hand off to AR
+   * but can't. Desktop keeps the full control sheet — it just disables
+   * "Place in Room" — so [Rotate] [Move] [Scale] [Reset] stay reachable.
+   */
+  const showUnsupportedSheet = !arCapable && (capabilities?.mobile ?? false);
+  const modeLabel = capabilities ? (arActive ? getARModeLabel(arMode) : '3D preview') : 'Detecting…';
   const primaryImage =
     product.images.find((i) => i.isPrimary)?.url ?? product.images[0]?.url ?? '';
 
@@ -130,12 +150,12 @@ export function ARExperience() {
           {capabilities && (
             <span
               className={`shrink-0 text-2xs font-semibold px-2.5 py-1.5 rounded-full border backdrop-blur-md ${
-                arCapable
+                arActive
                   ? 'bg-accent-500/20 text-accent-400 border-accent-500/25'
                   : 'bg-white/10 text-white/50 border-white/10'
               }`}
             >
-              {arCapable ? getARModeLabel(arMode) : '3D preview'}
+              {modeLabel}
             </span>
           )}
         </div>
@@ -181,8 +201,17 @@ export function ARExperience() {
         </div>
       )}
 
+      {/* ── AR hand-off refused: model stays, only placement is off ── */}
+      {status === 'ar-unavailable' && (
+        <div className="absolute top-16 left-0 right-0 z-20 flex justify-center px-4">
+          <div className="bg-brand-900/85 backdrop-blur-md text-white/75 text-2xs font-medium px-4 py-2 rounded-full border border-white/10 text-center">
+            AR couldn't start — you're viewing the live 3D model
+          </div>
+        </div>
+      )}
+
       {/* ── Not-capable: product shortcut under the 3D preview ── */}
-      {capabilities && !arCapable && (
+      {capabilities && showUnsupportedSheet && (
         <div className="absolute top-16 right-3 z-20 hidden sm:block">
           <Link
             to={`/product/${product.slug}`}
@@ -194,7 +223,7 @@ export function ARExperience() {
       )}
 
       {/* ── Bottom sheet ── */}
-      {capabilities && !arCapable ? (
+      {capabilities && showUnsupportedSheet ? (
         <div className="absolute bottom-0 left-0 right-0 z-20">
           <div className="bg-brand-900/95 backdrop-blur-xl border-t border-white/10 p-4 sm:p-5 rounded-t-3xl">
             <div className="max-w-md mx-auto">
@@ -229,8 +258,8 @@ export function ARExperience() {
       ) : (
         <ARControls
           product={product}
-          arSupported={arCapable}
-          arModeLabel={capabilities ? getARModeLabel(arMode) : 'Detecting…'}
+          arSupported={arActive}
+          arModeLabel={modeLabel}
           viewerRef={viewerRef}
           onStartAR={handleStartAR}
           onExit={handleExit}
