@@ -144,6 +144,7 @@ export function ModelViewer({
         rotation-per-second="24deg"
         shadow-intensity="1"
         shadow-softness="0.7"
+        tone-mapping="auto"
         exposure="1"
         environment-image={environmentImage(configuration)}
         camera-orbit={orbitFor(configuration)}

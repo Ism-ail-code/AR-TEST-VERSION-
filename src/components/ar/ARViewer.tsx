@@ -168,6 +168,7 @@ export function ARViewer({
         rotation-per-second="22deg"
         shadow-intensity={configuration?.backgroundBlur ? '0' : '1'}
         shadow-softness="0.8"
+        tone-mapping="auto"
         exposure="1"
         environment-image={environmentImage(configuration)}
         camera-orbit={orbitFor(configuration)}

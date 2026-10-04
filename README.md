@@ -206,14 +206,32 @@ The three headline demos all work end to end: **Home → Appliances → Refriger
     (SheenChair, GlamVelvetSofa, IridescenceLamp, SpecularSilkPouf). Per-asset licences apply —
     see the upstream repository.
   - the sixteen appliances, electronics and audio products are parametric models generated
-    in-repo (nothing downloaded, no third-party licence). They are authored in metres and
-    grounded at `y = 0`, which is what makes `ar-scale="auto"` place them at true size.
+    in-repo (nothing downloaded, no third-party licence) by the scripts in [`tools/`](tools/).
+    They are authored in metres and grounded at `y = 0`, which is what makes
+    `ar-scale="auto"` place them at true size.
 - **Product photography** — the four furniture images are CC-licensed photographs sourced
   through the [Openverse](https://openverse.org) API. The sixteen new product images are
   rendered from each product's **own** GLB, so the card photo, the 3D view and the AR placement
   can never disagree with each other.
 - **Icons** — [Lucide](https://lucide.dev).
 - **Fonts** — Inter and JetBrains Mono (Google Fonts, loaded from `index.css`).
+
+### Regenerating the 3D assets
+
+Every generated model, texture and product photo comes from [`tools/`](tools/), and their
+outputs are committed — so you only need this if you actually change a model:
+
+```bash
+node tools/gen-env.mjs       # public/textures/studio-env.png — the studio light rig
+node tools/build-models.mjs  # public/models/*.glb — the 16 parametric products
+node tools/render-models.mjs # public/images/*-1.jpg — photos shot from those exact GLBs
+```
+
+`gen-env.mjs` and `build-models.mjs` use only Node built-ins and are deterministic (they
+regenerate byte-identical output). `render-models.mjs` drives headless Chromium, so it wants
+`npm i -D playwright-core` first — skip it unless you touch geometry, since every product photo
+is already committed. All three resolve the repository root from their own location, so any
+working directory will do.
 
 ---
 
